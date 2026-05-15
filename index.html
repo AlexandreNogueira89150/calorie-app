@@ -327,8 +327,16 @@ header p{margin-top:6px;font-size:11px;color:var(--text-muted);letter-spacing:0.
     <div class="search-results" id="searchResults"></div>
   </div>
 
-  <div class="sl">02 — Aliments rapides <button class="sl-btn" id="clearPresetBtn">Effacer</button></div>
-  <div class="preset-groups" id="presetGroups"></div>
+  <div class="sl">02 — Aliment rapide <button class="sl-btn" id="createPresetBtn">+ Créer</button><button class="sl-btn" id="clearPresetBtn">Effacer</button></div>
+  <div style="position:relative;margin-bottom:16px;">
+    <input type="text" id="presetSearchInput" class="itxt" placeholder="Taper pour chercher… ex: ban, riz, pou" autocomplete="off" style="font-size:13px;padding:9px 36px 9px 12px;cursor:text;">
+    <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--text-dim);pointer-events:none;">▾</span>
+    <div id="presetDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:50;background:var(--surface);border:1px solid var(--accent-dim);border-top:none;border-radius:0 0 var(--radius) var(--radius);max-height:260px;overflow-y:auto;"></div>
+  </div>
+  <div id="presetSelectedDisplay" style="display:none;margin-bottom:12px;font-size:11px;color:var(--text-muted);padding:7px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:3px;align-items:center;justify-content:space-between;">
+    <span>Sélectionné : <span id="presetSelectedName" style="color:var(--text);"></span></span>
+    <button id="presetClearBtn" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:14px;padding:0 2px;line-height:1;">×</button>
+  </div>
 
   <div class="sl">03 — Mode</div>
   <div class="cook-toggle">
@@ -449,14 +457,15 @@ header p{margin-top:6px;font-size:11px;color:var(--text-muted);letter-spacing:0.
   </button>
 
   <!-- MEAL SECTION -->
-  <div class="sl">07 — Repas du jour</div>
+  <div class="sl">07 — Repas du jour <button class="sl-btn" id="saveMealBtn">+ Sauvegarder repas</button></div>
 
   <!-- Date navigation -->
   <div class="date-nav">
     <button class="date-nav-btn" id="datePrev">‹</button>
     <span class="date-label" id="dateLabel">Aujourd'hui</span>
     <button class="date-nav-btn" id="dateNext" disabled>›</button>
-    <button class="date-clear-btn" id="clearDayBtn">Vider le jour</button>
+    <button class="date-clear-btn" id="dupDayBtn" title="Dupliquer ce jour vers un autre jour">⧉ Dupliquer jour</button>
+    <button class="date-clear-btn" id="clearDayBtn">Vider</button>
   </div>
 
   <!-- 4 meal type tabs -->
@@ -637,13 +646,109 @@ header p{margin-top:6px;font-size:11px;color:var(--text-muted);letter-spacing:0.
   </div>
 </div>
 
+
+<!-- MODAL: SAVE MEAL -->
+<div class="modal-overlay" id="modalSaveMeal">
+  <div class="modal">
+    <h3>Sauvegarder ce repas</h3>
+    <div class="field"><label>Nom du repas</label>
+      <input type="text" class="itxt" id="saveMealName" placeholder="ex. Petit-déj habituel, Dîner rapide…" autocomplete="off">
+    </div>
+    <div id="saveMealInfo" style="font-size:10px;color:var(--text-muted);margin-top:10px;padding:8px 10px;background:var(--surface2);border-radius:3px;"></div>
+    <div class="modal-actions">
+      <button class="btn-primary" id="confirmSaveMeal">Sauvegarder</button>
+      <button class="btn-secondary" id="cancelSaveMeal">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: LOAD SAVED MEAL -->
+<div class="modal-overlay" id="modalLoadMeal">
+  <div class="modal">
+    <h3>Repas sauvegardés</h3>
+    <div id="savedMealsList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px;max-height:280px;overflow-y:auto;"></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" id="cancelLoadMeal">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: DUPLICATE MEAL -->
+<div class="modal-overlay" id="modalDupMeal">
+  <div class="modal">
+    <h3>Copier vers…</h3>
+    <div id="dupMealSource" style="font-size:11px;color:var(--text-muted);margin-bottom:14px;"></div>
+    <div class="field"><label>Repas cible</label>
+      <select id="dupMealTargetType" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:'DM Mono',monospace;font-size:13px;padding:10px 12px;outline:none;cursor:pointer;">
+        <option value="breakfast">🌅 Petit-déj</option>
+        <option value="lunch">☀️ Déjeuner</option>
+        <option value="dinner">🌙 Dîner</option>
+        <option value="snack">🍎 Collation</option>
+      </select>
+    </div>
+    <div class="field" style="margin-top:10px;"><label>Jour cible</label>
+      <input type="date" id="dupMealTargetDate" class="itxt" style="font-size:13px;">
+    </div>
+    <div style="font-size:10px;color:var(--text-muted);margin-top:6px;">Les aliments existants dans le repas cible seront conservés.</div>
+    <div class="modal-actions">
+      <button class="btn-primary" id="confirmDupMeal">Copier</button>
+      <button class="btn-secondary" id="cancelDupMeal">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: DUPLICATE DAY -->
+<div class="modal-overlay" id="modalDupDay">
+  <div class="modal">
+    <h3>Dupliquer ce jour</h3>
+    <div id="dupDaySource" style="font-size:11px;color:var(--text-muted);margin-bottom:14px;"></div>
+    <div class="field"><label>Jour cible</label>
+      <input type="date" id="dupDayTargetDate" class="itxt" style="font-size:13px;">
+    </div>
+    <div style="font-size:10px;color:var(--orange);margin-top:6px;">⚠ Écrase les données du jour cible.</div>
+    <div class="modal-actions">
+      <button class="btn-primary" id="confirmDupDay">Dupliquer</button>
+      <button class="btn-secondary" id="cancelDupDay">Annuler</button>
+    </div>
+  </div>
+</div>
 <!-- MODAL PRESET SAVE -->
 <div class="modal-overlay" id="modalAdd">
   <div class="modal">
-    <h3>Sauvegarder l'aliment</h3>
-    <div class="field"><label>Nom</label><input type="text" class="itxt" id="newFoodName" placeholder="ex. Pain de mie Harry's" autocomplete="off"></div>
-    <div style="display:grid;grid-template-columns:70px 1fr;gap:10px;margin-top:12px;">
-      <div class="field"><label>Emoji</label><input type="text" class="itxt" id="newFoodEmoji" placeholder="🍞" maxlength="2" style="text-align:center;font-size:18px;"></div>
+    <h3 id="modalAddTitle">Sauvegarder l'aliment</h3>
+    <div style="display:grid;grid-template-columns:60px 1fr;gap:10px;margin-bottom:12px;">
+      <div class="field" style="margin-bottom:0;"><label>Emoji</label><input type="text" class="itxt" id="newFoodEmoji" placeholder="☕" maxlength="2" style="text-align:center;font-size:18px;"></div>
+      <div class="field" style="margin-bottom:0;"><label>Nom <span style="color:var(--red);font-size:10px;">*</span></label><input type="text" class="itxt" id="newFoodName" placeholder="ex. Café au lait" autocomplete="off"></div>
+    </div>
+    <!-- type toggle -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:3px;gap:3px;margin-bottom:12px;">
+      <button class="modal-type-btn active" data-ftype="per100" style="padding:7px 6px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text);background:var(--surface3);border:1px solid var(--border2);border-radius:2px;cursor:pointer;transition:all 0.15s;">⚖ Au 100g</button>
+      <button class="modal-type-btn" data-ftype="fixed" style="padding:7px 6px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);background:none;border:1px solid transparent;border-radius:2px;cursor:pointer;transition:all 0.15s;">📌 Fixe (total)</button>
+    </div>
+    <!-- fixed fields (kcal total + optional portion label + macros) -->
+    <div id="modalFixedFields" style="display:none;margin-bottom:12px;">
+      <div class="field" style="margin-bottom:8px;">
+        <label>Calories totales <span style="color:var(--red);font-size:10px;">*</span></label>
+        <div class="iw"><input type="number" id="fixedKcal" placeholder="ex. 70" min="0" step="1"><span class="iu">kcal</span></div>
+      </div>
+      <div class="field" style="margin-bottom:8px;">
+        <label>Nom de la portion <span style="color:var(--text-dim);font-size:9px;">(optionnel)</span></label>
+        <input type="text" class="itxt" id="fixedPortionLabel" placeholder="ex. 1 tasse, 1 verre, 1 bol" autocomplete="off" style="font-size:13px;">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
+        <div class="field" style="margin-bottom:0;">
+          <label style="font-size:9px;">P (g) <span style="color:var(--text-dim);">opt.</span></label>
+          <div class="iw"><input type="number" id="fixedP" placeholder="—" min="0" step="0.1"><span class="iu" style="font-size:9px;">g</span></div>
+        </div>
+        <div class="field" style="margin-bottom:0;">
+          <label style="font-size:9px;">G (g) <span style="color:var(--text-dim);">opt.</span></label>
+          <div class="iw"><input type="number" id="fixedC" placeholder="—" min="0" step="0.1"><span class="iu" style="font-size:9px;">g</span></div>
+        </div>
+        <div class="field" style="margin-bottom:0;">
+          <label style="font-size:9px;">L (g) <span style="color:var(--text-dim);">opt.</span></label>
+          <div class="iw"><input type="number" id="fixedF" placeholder="—" min="0" step="0.1"><span class="iu" style="font-size:9px;">g</span></div>
+        </div>
+      </div>
     </div>
     <div class="modal-info" id="modalInfo"></div>
     <div class="modal-actions">
@@ -749,6 +854,8 @@ function dayTotalKcal(dateKey){
 // STATE
 // ═══════════════════════════════════════════
 let mode='raw',cookMode='cooked',activeId=null,lastResult=null,currentServingG=null;
+let presetSearchInput=null,presetDropdown=null;
+let isCreatingNew=false,pendingNewName='',pendingNewEmoji='',pendingIsFixed=false;
 let viewDateKey=todayKey();
 let activeMealType='breakfast';
 let builderIngredients=[],editingRecipeId=null,bSearchPending=null;
@@ -861,7 +968,13 @@ function renderMealSection(){
   container.innerHTML='';
 
   if(!items.length){
-    container.innerHTML='<div class="card"><div class="empty-state">Aucun aliment pour ce repas</div></div>';
+    const emptyDiv=document.createElement('div');
+    emptyDiv.innerHTML='<div class="card"><div class="empty-state">Aucun aliment pour ce repas</div></div>';
+    container.appendChild(emptyDiv);
+    const ab=document.createElement('div');ab.style.cssText='display:flex;gap:8px;margin-top:8px;';
+    const lb=document.createElement('button');lb.className='btn-ghost';lb.style.cssText='flex:1;font-size:9px;padding:7px;';
+    lb.textContent='📥 Charger un repas';lb.addEventListener('click',openSavedMeals);
+    ab.appendChild(lb);container.appendChild(ab);
     return;
   }
 
@@ -884,29 +997,57 @@ function renderMealSection(){
 
   items.forEach((item,idx)=>{
     const tr=document.createElement('tr');tr.className='fade-in';
-    const kpg=item.kcal/item.rawG;
+    const isFixed=item.fixed===true;
+    // kcal per unit: for fixed items = fixedKcal per portion; for normal = kcal/rawG
+    const kcalPerUnit = isFixed
+      ? (item.fixedKcalPerUnit || item.kcal) // fixedKcal stored at add time
+      : (item.rawG>0 ? item.kcal/item.rawG : 0);
 
     // name cell
     const nameTd=document.createElement('td');
-    nameTd.innerHTML=`<div class="meal-name-cell"><span class="meal-emoji">${item.emoji||''}</span><div><div class="meal-item-name">${item.name}</div><div class="meal-sub">${item.noCook?'':'cru'}</div></div></div>`;
+    const subLabel = isFixed ? (item.fixedLabel||'portion') : (item.noCook?'':'cru');
+    nameTd.innerHTML=`<div class="meal-name-cell"><span class="meal-emoji">${item.emoji||''}</span><div><div class="meal-item-name">${item.name}</div><div class="meal-sub">${subLabel}</div></div></div>`;
 
     // qty cell — inline editable
     const qtyTd=document.createElement('td');qtyTd.style.textAlign='center';
     const qtyIn=document.createElement('input');qtyIn.type='number';qtyIn.className='meal-qty-input';
-    qtyIn.value=item.rawG;qtyIn.min=1;qtyIn.step=1;
-    qtyIn.addEventListener('change',()=>{
-      const v=parseFloat(qtyIn.value);if(!v||v<=0)return;
-      const d=getDayData(viewDateKey);
-      const factor=v/d[activeMealType][idx].rawG;
-      d[activeMealType][idx].rawG=v;
-      d[activeMealType][idx].kcal=Math.round(v*kpg*10)/10;
-      if(d[activeMealType][idx].p!=null){d[activeMealType][idx].p=Math.round(item.p/item.rawG*v*100)/100;}
-      if(d[activeMealType][idx].c!=null){d[activeMealType][idx].c=Math.round(item.c/item.rawG*v*100)/100;}
-      if(d[activeMealType][idx].f!=null){d[activeMealType][idx].f=Math.round(item.f/item.rawG*v*100)/100;}
-      setDayData(viewDateKey,d);renderMealSection();updateGoalBanner();
-    });
-    const unitSpan=document.createElement('span');unitSpan.textContent='g';unitSpan.style.cssText='font-size:9px;color:var(--text-dim);margin-left:3px;';
-    qtyTd.appendChild(qtyIn);qtyTd.appendChild(unitSpan);
+    qtyIn.min=1;qtyIn.step=1;
+
+    if(isFixed){
+      // Show units (1, 2, 3…)
+      qtyIn.value=item.fixedUnits||1;
+      qtyIn.addEventListener('change',()=>{
+        const v=parseFloat(qtyIn.value);if(!v||v<=0)return;
+        const d=getDayData(viewDateKey);
+        const it=d[activeMealType][idx];
+        it.fixedUnits=v;
+        it.kcal=Math.round(v*(it.fixedKcalPerUnit||it.kcal)*10)/10;
+        if(it.fixedPPerUnit!=null) it.p=Math.round(v*it.fixedPPerUnit*100)/100;
+        if(it.fixedCPerUnit!=null) it.c=Math.round(v*it.fixedCPerUnit*100)/100;
+        if(it.fixedFPerUnit!=null) it.f=Math.round(v*it.fixedFPerUnit*100)/100;
+        setDayData(viewDateKey,d);renderMealSection();updateGoalBanner();
+      });
+      const unitSpan=document.createElement('span');
+      const ul=item.fixedLabel||'×';
+      unitSpan.textContent=ul.length>6?'×':ul;
+      unitSpan.style.cssText='font-size:9px;color:var(--text-dim);margin-left:3px;';
+      qtyTd.appendChild(qtyIn);qtyTd.appendChild(unitSpan);
+    } else {
+      qtyIn.value=item.rawG;
+      qtyIn.addEventListener('change',()=>{
+        const v=parseFloat(qtyIn.value);if(!v||v<=0)return;
+        const d=getDayData(viewDateKey);
+        const it=d[activeMealType][idx];
+        it.rawG=v;
+        it.kcal=Math.round(v*kcalPerUnit*10)/10;
+        if(item.p!=null) it.p=Math.round(item.p/item.rawG*v*100)/100;
+        if(item.c!=null) it.c=Math.round(item.c/item.rawG*v*100)/100;
+        if(item.f!=null) it.f=Math.round(item.f/item.rawG*v*100)/100;
+        setDayData(viewDateKey,d);renderMealSection();updateGoalBanner();
+      });
+      const unitSpan=document.createElement('span');unitSpan.textContent='g';unitSpan.style.cssText='font-size:9px;color:var(--text-dim);margin-left:3px;';
+      qtyTd.appendChild(qtyIn);qtyTd.appendChild(unitSpan);
+    }
 
     // kcal
     const kcalTd=document.createElement('td');kcalTd.className='kv';kcalTd.textContent=fmt(item.kcal,0);
@@ -926,14 +1067,29 @@ function renderMealSection(){
 
   // totals row
   const tK=items.reduce((a,i)=>a+i.kcal,0);
-  const tR=items.reduce((a,i)=>a+i.rawG,0);
+  const tR=items.reduce((a,i)=>a+(i.fixed?0:i.rawG),0);
+  const tRStr=tR>0?fmt(tR,0)+'g':'—';
   const tfootTr=document.createElement('tr');tfootTr.className='totals-row';
-  tfootTr.innerHTML=`<td>Total</td><td style="text-align:center">${fmt(tR,0)}g</td><td class="kv">${fmt(tK,0)}</td><td></td>`;
+  tfootTr.innerHTML=`<td>Total</td><td style="text-align:center">${tRStr}</td><td class="kv">${fmt(tK,0)}</td><td></td>`;
 
   const tfoot=document.createElement('tfoot');tfoot.appendChild(tfootTr);
   table.appendChild(tbody);table.appendChild(tfoot);
   card.appendChild(table);
   container.appendChild(card);
+
+  // action bar: load saved + dup meal
+  const actionBar=document.createElement('div');
+  actionBar.style.cssText='display:flex;gap:8px;margin-top:8px;';
+  const loadBtn=document.createElement('button');
+  loadBtn.className='btn-ghost';loadBtn.style.cssText='flex:1;font-size:9px;padding:7px;';
+  loadBtn.textContent='📥 Charger un repas';
+  loadBtn.addEventListener('click',openSavedMeals);
+  const dupBtn=document.createElement('button');
+  dupBtn.className='btn-ghost';dupBtn.style.cssText='flex:1;font-size:9px;padding:7px;';
+  dupBtn.textContent='⧉ Copier ce repas';
+  dupBtn.addEventListener('click',()=>openDupMeal(activeMealType));
+  actionBar.appendChild(loadBtn);actionBar.appendChild(dupBtn);
+  container.appendChild(actionBar);
 }
 
 // ═══════════════════════════════════════════
@@ -946,18 +1102,41 @@ document.getElementById('addMealBtn').addEventListener('click',e=>{
   const d=getDayData(viewDateKey);
   d[mtype].push({...lastResult,id:Date.now()});
   setDayData(viewDateKey,d);
-  // switch to that meal type tab
   activeMealType=mtype;
   document.querySelectorAll('.meal-type-tab').forEach(b=>b.classList.toggle('active',b.dataset.mtype===mtype));
   renderMealSection();updateGoalBanner();
+
+  // feedback visuel
   const btn=document.getElementById('addMealBtn');
-  const sel=btn.querySelector('select');
   const origHTML=btn.innerHTML;
-  sel.style.display='none';
-  btn.childNodes[0].textContent='✓ Ajouté  ';
+  btn.querySelector('select').style.display='none';
+  btn.childNodes[0].textContent='\u2713 Ajout\u00e9  ';
   btn.style.color='var(--green)';btn.style.borderColor='var(--green)';
-  setTimeout(()=>{btn.innerHTML=origHTML;btn.style.color='';btn.style.borderColor='';
-    btn.querySelector('select').addEventListener('click',e=>e.stopPropagation());},1000);
+  setTimeout(()=>{
+    btn.innerHTML=origHTML;btn.style.color='';btn.style.borderColor='';
+    btn.querySelector('select').addEventListener('click',e=>e.stopPropagation());
+  },900);
+
+  // ── reset calculateur
+  ['kcalPer100','rawRef','cookedRef','queryValue','protRef','carbRef','fatRef',
+   'calcPortionSize','calcPortionCount'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  document.getElementById('calcPortionPreview').textContent='';
+  activeId=null; lastResult=null;
+  hidePortionRow();
+  clearResults();
+  document.getElementById('addMealBtn').disabled=true;
+  document.getElementById('filledKcalTag').innerHTML='';
+  document.getElementById('filledMacroTag').innerHTML='';
+  document.getElementById('errorMsg').textContent='';
+  updateRatio();
+  // reset combobox
+  if(presetSelectedDisplay){ presetSelectedDisplay.style.display='none'; }
+  if(presetSearchInput){ presetSearchInput.value=''; }
+  document.getElementById('searchResults').innerHTML='';
+  document.getElementById('searchStatus').textContent='';
+  document.getElementById('searchInput').value='';
 });
 // prevent select click from firing add
 document.getElementById('addMealTypeSelect').addEventListener('click',e=>e.stopPropagation());
@@ -1104,37 +1283,62 @@ document.querySelectorAll('.main-tab').forEach(btn=>{
 // PRESETS
 // ═══════════════════════════════════════════
 function renderPresets(){
-  const container=document.getElementById('presetGroups');container.innerHTML='';
-  const customIds=new Set(loadCustom().map(c=>c.id));
-  const groups={};
-  allPresets().forEach(p=>{const g=p.group||'Divers';if(!groups[g])groups[g]=[];groups[g].push(p);});
-  Object.entries(groups).forEach(([gName,items])=>{
-    const div=document.createElement('div');div.className='preset-group';
-    const lbl=document.createElement('div');lbl.className='preset-group-label';lbl.textContent=gName;div.appendChild(lbl);
-    const grid=document.createElement('div');grid.className='preset-grid';
-    items.forEach(p=>{
-      const isC=customIds.has(p.id);
-      const btn=document.createElement('button');
-      btn.className='preset-btn'+(p.id===activeId?' active':'')+(isC?' is-custom':'');
-      const lbl2=document.createElement('span');lbl2.textContent=(p.emoji?p.emoji+' ':'')+p.name;btn.appendChild(lbl2);
-      if(p.servingG){const sv=document.createElement('span');sv.className='preset-serving';sv.textContent=`${p.servingG}g`;btn.appendChild(sv);}
-      if(isC){const x=document.createElement('span');x.className='del-x';x.textContent='×';x.addEventListener('click',e=>{e.stopPropagation();deleteCustom(p.id);});btn.appendChild(x);}
-      btn.addEventListener('click',()=>selectPreset(p.id));
-      grid.appendChild(btn);
-    });
-    div.appendChild(grid);container.appendChild(div);
-  });
+  // Presets now handled by searchable combobox — rebuild dropdown if open
+  if(presetDropdown && presetDropdown.style.display !== 'none'){
+    buildPresetDropdown(presetSearchInput ? presetSearchInput.value : '');
+  }
+  // also rebuild builder ing select if open
+  if(typeof populateIngSelect === 'function') populateIngSelect('');
 }
 function selectPreset(id){
   const p=allPresets().find(x=>x.id===id);if(!p)return;
   activeId=id;
+  document.getElementById('filledKcalTag').innerHTML='';document.getElementById('filledMacroTag').innerHTML='';
+
+  if(p.fixed){
+    // Fixed preset — bypass calculator, set lastResult directly
+    ['kcalPer100','rawRef','cookedRef','protRef','carbRef','fatRef','queryValue'].forEach(i=>document.getElementById(i).value='');
+    hidePortionRow(); clearResults();
+    // show fixed info in result area directly
+    const label=p.fixedLabel||'1 portion';
+    document.getElementById('r1label').textContent='Portion';
+    document.getElementById('r1value').textContent=label;
+    document.getElementById('r1unit').textContent='';
+    document.getElementById('r2row').style.display='none';
+    document.getElementById('r4row').style.display='none';
+    document.getElementById('r3value').textContent=p.fixedKcal;
+    const mpEl=document.getElementById('mp'),mcEl=document.getElementById('mc'),mfEl=document.getElementById('mf');
+    if(p.fixedP!=null){mpEl.textContent=p.fixedP+'g';mpEl.className='macro-val on pv';}else{mpEl.textContent='—';mpEl.className='macro-val';}
+    if(p.fixedC!=null){mcEl.textContent=p.fixedC+'g';mcEl.className='macro-val on cv';}else{mcEl.textContent='—';mcEl.className='macro-val';}
+    if(p.fixedF!=null){mfEl.textContent=p.fixedF+'g';mfEl.className='macro-val on fv';}else{mfEl.textContent='—';mfEl.className='macro-val';}
+    // build lastResult so it can be added to meal
+    lastResult={
+      name:p.name, emoji:p.emoji||'',
+      rawG:0, cookedG:null,
+      kcal:p.fixedKcal,
+      p:p.fixedP??null, c:p.fixedC??null, f:p.fixedF??null,
+      noCook:true, fixed:true,
+      fixedLabel:p.fixedLabel||null,
+      fixedUnits:1,
+      fixedKcalPerUnit:p.fixedKcal,
+      fixedPPerUnit:p.fixedP??null,
+      fixedCPerUnit:p.fixedC??null,
+      fixedFPerUnit:p.fixedF??null,
+    };
+    document.getElementById('addMealBtn').disabled=false;
+    renderPresets();
+    return;
+  }
+
+  // Normal preset
   document.getElementById('kcalPer100').value=p.kcal;
   document.getElementById('protRef').value=p.p!=null?p.p:'';
   document.getElementById('carbRef').value=p.c!=null?p.c:'';
   document.getElementById('fatRef').value=p.f!=null?p.f:'';
   document.getElementById('rawRef').value=p.rawRef||100;
   document.getElementById('cookedRef').value=p.cookedRef||100;
-  document.getElementById('filledKcalTag').innerHTML='';document.getElementById('filledMacroTag').innerHTML='';
+  document.getElementById('r2row').style.display='';
+  document.getElementById('r4row').style.display='';
   lastResult=null;document.getElementById('addMealBtn').disabled=true;
   updateRatio();
   if(p.servingG){showPortionRow(p.servingG);}else{hidePortionRow();queryValueEl.value='';clearResults();}
@@ -1145,6 +1349,27 @@ function deleteCustom(id){
   if(activeId===id){activeId=null;['kcalPer100','rawRef','cookedRef','protRef','carbRef','fatRef'].forEach(i=>document.getElementById(i).value='');}
   updateRatio();clearResults();renderPresets();
 }
+
+// ── Créer un nouvel aliment (tout à zéro)
+document.getElementById('createPresetBtn').addEventListener('click',()=>{
+  isCreatingNew=true;
+  activeId=null;
+  ['kcalPer100','rawRef','cookedRef','protRef','carbRef','fatRef','queryValue'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('filledKcalTag').innerHTML='';
+  document.getElementById('filledMacroTag').innerHTML='';
+  hidePortionRow();clearResults();lastResult=null;
+  document.getElementById('addMealBtn').disabled=true;
+  updateRatio();
+  if(presetSelectedDisplay) presetSelectedDisplay.style.display='none';
+  if(presetSearchInput) presetSearchInput.value='';
+  document.getElementById('newFoodName').value='';
+  document.getElementById('newFoodEmoji').value='';
+  document.getElementById('modalInfo').textContent="Entre un nom, puis remplis les données ci-dessous et clique \"+ Sauvegarder aliment\".";
+  document.getElementById('modalAddTitle').textContent='Nouvel aliment — étape 1/2';
+  if(typeof resetModalType==='function') resetModalType();
+  document.getElementById('modalAdd').classList.add('open');
+  setTimeout(()=>document.getElementById('newFoodName').focus(),80);
+});
 document.getElementById('clearPresetBtn').addEventListener('click',()=>{
   activeId=null;hidePortionRow();queryValueEl.value='';clearResults();lastResult=null;document.getElementById('addMealBtn').disabled=true;renderPresets();
 });
@@ -1204,6 +1429,9 @@ document.querySelectorAll('.calc-tab').forEach(btn=>{
 function clearResults(){
   ['r1value','r2value','r3value','r4value'].forEach(id=>document.getElementById(id).textContent='—');
   ['mp','mc','mf'].forEach(id=>{const el=document.getElementById(id);el.textContent='—';el.className='macro-val';});
+  document.getElementById('r1unit').textContent='g';
+  document.getElementById('r2row').style.display='';
+  document.getElementById('r4row').style.display='';
 }
 function calculate(){
   document.getElementById('errorMsg').textContent='';
@@ -1243,23 +1471,141 @@ function calculate(){
 // ═══════════════════════════════════════════
 document.getElementById('saveCurrentBtn').addEventListener('click',()=>{
   const k=parseFloat(document.getElementById('kcalPer100').value),r=parseFloat(document.getElementById('rawRef').value),c=parseFloat(document.getElementById('cookedRef').value);
+
+  if(isCreatingNew && pendingNewName){
+    // Step 2: name already set — save directly
+    const id='c_'+Date.now();
+    const p=parseFloat(document.getElementById('protRef').value),gc=parseFloat(document.getElementById('carbRef').value),f=parseFloat(document.getElementById('fatRef').value);
+    const arr=loadCustom();
+    arr.push({id,name:pendingNewName,emoji:pendingNewEmoji||'⭐',kcal:k,p:!isNaN(p)?p:null,c:!isNaN(gc)?gc:null,f:!isNaN(f)?f:null,rawRef:r||100,cookedRef:c||100,group:'Mes aliments',servingG:currentServingG||null});
+    saveCustom(arr);activeId=id;
+    isCreatingNew=false;
+    const btn=document.getElementById('saveCurrentBtn');
+    btn.textContent='+ Sauvegarder aliment';btn.style.borderColor='';btn.style.color='';
+    document.getElementById('filledKcalTag').innerHTML='';document.getElementById('filledMacroTag').innerHTML='';
+    if(presetSelectedDisplay){
+      document.getElementById('presetSelectedName').textContent=(pendingNewEmoji||'⭐')+' '+pendingNewName;
+      presetSelectedDisplay.style.display='flex';
+    }
+    pendingNewName='';pendingNewEmoji='';
+    renderPresets();
+    return;
+  }
+
+  // Normal flow: open modal to confirm/edit name
   if(!k||(cookMode==='cooked'&&(!r||!c))){document.getElementById('errorMsg').textContent="Remplis d'abord les champs de référence.";return;}
   const p=parseFloat(document.getElementById('protRef').value),gc=parseFloat(document.getElementById('carbRef').value),f=parseFloat(document.getElementById('fatRef').value);
   let info=`${k} kcal/100g`;if(cookMode==='cooked')info+=` · ${r}g cru → ${c}g cuit`;if(!isNaN(p)&&!isNaN(gc)&&!isNaN(f))info+=` · P${p} G${gc} L${f}`;
-  document.getElementById('modalInfo').textContent=info;document.getElementById('newFoodEmoji').value='';
-  document.getElementById('modalAdd').classList.add('open');setTimeout(()=>document.getElementById('newFoodName').focus(),80);
+  document.getElementById('modalInfo').textContent=info;
+  document.getElementById('modalAddTitle').textContent="Sauvegarder l'aliment";
+  isCreatingNew=false;
+  document.getElementById('newFoodEmoji').value='';
+  document.getElementById('modalAdd').classList.add('open');
+  setTimeout(()=>document.getElementById('newFoodName').focus(),80);
 });
 document.getElementById('confirmSave').addEventListener('click',()=>{
-  const name=document.getElementById('newFoodName').value.trim();if(!name){document.getElementById('newFoodName').focus();return;}
-  const emoji=document.getElementById('newFoodEmoji').value.trim(),id='c_'+Date.now();
-  const k=parseFloat(document.getElementById('kcalPer100').value),r=parseFloat(document.getElementById('rawRef').value),c=parseFloat(document.getElementById('cookedRef').value);
-  const p=parseFloat(document.getElementById('protRef').value),gc=parseFloat(document.getElementById('carbRef').value),f=parseFloat(document.getElementById('fatRef').value);
-  const arr=loadCustom();
-  arr.push({id,name,emoji:emoji||'⭐',kcal:k,p:!isNaN(p)?p:null,c:!isNaN(gc)?gc:null,f:!isNaN(f)?f:null,rawRef:r||100,cookedRef:c||100,group:'Mes aliments',servingG:currentServingG||null});
-  saveCustom(arr);activeId=id;
+  const name=document.getElementById('newFoodName').value.trim();
+  if(!name){document.getElementById('newFoodName').focus();return;}
+  const emoji=document.getElementById('newFoodEmoji').value.trim();
+
+  if(isCreatingNew){
+    if(modalFoodType==='fixed'){
+      // Mode fixe : toutes les données sont dans le modal, on sauvegarde maintenant
+      const fk=parseFloat(document.getElementById('fixedKcal').value);
+      if(!fk){document.getElementById('fixedKcal').focus();return;}
+      const fp=parseFloat(document.getElementById('fixedP').value);
+      const fc=parseFloat(document.getElementById('fixedC').value);
+      const ff=parseFloat(document.getElementById('fixedF').value);
+      const flabel=document.getElementById('fixedPortionLabel').value.trim();
+      const id='c_'+Date.now();
+      const arr=loadCustom();
+      arr.push({id,name,emoji:emoji||'\u2b50',
+        kcal:null,p:null,c:null,f:null,rawRef:null,cookedRef:null,
+        group:'Mes aliments',servingG:null,
+        fixed:true,fixedKcal:fk,fixedLabel:flabel||null,
+        fixedP:!isNaN(fp)?fp:null,fixedC:!isNaN(fc)?fc:null,fixedF:!isNaN(ff)?ff:null});
+      saveCustom(arr);activeId=id;
+      isCreatingNew=false;pendingNewName='';pendingNewEmoji='';pendingIsFixed=false;
+      document.getElementById('modalAdd').classList.remove('open');
+      resetModalType();
+      if(presetSelectedDisplay){
+        document.getElementById('presetSelectedName').textContent=(emoji||'\u2b50')+' '+name;
+        presetSelectedDisplay.style.display='flex';
+      }
+      // select it immediately so user can add to meal
+      selectPreset(id);
+      renderPresets();
+      return;
+    }
+    // Mode au 100g : stocker nom/emoji, laisser remplir les champs
+    pendingNewName=name; pendingNewEmoji=emoji;
+    document.getElementById('modalAdd').classList.remove('open');
+    const btn=document.getElementById('saveCurrentBtn');
+    btn.textContent='+ Sauvegarder "'+name+'"';
+    btn.style.borderColor='var(--accent)';btn.style.color='var(--accent)';
+    return;
+  }
+
+  // Normal save (from saveCurrentBtn flow)
+  const id='c_'+Date.now();
+  let newPreset;
+  if(modalFoodType==='fixed'){
+    const fk=parseFloat(document.getElementById('fixedKcal').value);
+    if(!fk){document.getElementById('fixedKcal').focus();return;}
+    const fp=parseFloat(document.getElementById('fixedP').value);
+    const fc=parseFloat(document.getElementById('fixedC').value);
+    const ff=parseFloat(document.getElementById('fixedF').value);
+    const flabel=document.getElementById('fixedPortionLabel').value.trim();
+    newPreset={id,name,emoji:emoji||'⭐',kcal:null,p:!isNaN(fp)?fp:null,c:!isNaN(fc)?fc:null,f:!isNaN(ff)?ff:null,
+      rawRef:null,cookedRef:null,group:'Mes aliments',servingG:null,
+      fixed:true,fixedKcal:fk,fixedLabel:flabel||null,
+      fixedP:!isNaN(fp)?fp:null,fixedC:!isNaN(fc)?fc:null,fixedF:!isNaN(ff)?ff:null};
+  } else {
+    const k=parseFloat(document.getElementById('kcalPer100').value),r=parseFloat(document.getElementById('rawRef').value),c=parseFloat(document.getElementById('cookedRef').value);
+    const p=parseFloat(document.getElementById('protRef').value),gc=parseFloat(document.getElementById('carbRef').value),f=parseFloat(document.getElementById('fatRef').value);
+    newPreset={id,name,emoji:emoji||'⭐',kcal:k,p:!isNaN(p)?p:null,c:!isNaN(gc)?gc:null,f:!isNaN(f)?f:null,
+      rawRef:r||100,cookedRef:c||100,group:'Mes aliments',servingG:currentServingG||null,fixed:false};
+  }
+  const arr=loadCustom(); arr.push(newPreset);
+  saveCustom(arr); activeId=id;
   document.getElementById('filledKcalTag').innerHTML='';document.getElementById('filledMacroTag').innerHTML='';
-  document.getElementById('modalAdd').classList.remove('open');renderPresets();
+  document.getElementById('modalAdd').classList.remove('open');
+  resetModalType();
+  if(presetSelectedDisplay){
+    document.getElementById('presetSelectedName').textContent=(emoji||'\u2b50')+' '+name;
+    presetSelectedDisplay.style.display='flex';
+  }
+  renderPresets();
 });
+
+// ── Modal type toggle (au 100g / fixe)
+let modalFoodType = 'per100';
+document.querySelectorAll('.modal-type-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    modalFoodType = btn.dataset.ftype;
+    document.querySelectorAll('.modal-type-btn').forEach(b=>{
+      const on = b===btn;
+      b.style.background = on?'var(--surface3)':'none';
+      b.style.borderColor = on?'var(--border2)':'transparent';
+      b.style.color = on?'var(--text)':'var(--text-muted)';
+    });
+    document.getElementById('modalFixedFields').style.display = modalFoodType==='fixed'?'block':'none';
+  });
+});
+
+function resetModalType(){
+  modalFoodType='per100';
+  document.querySelectorAll('.modal-type-btn').forEach(b=>{
+    const on = b.dataset.ftype==='per100';
+    b.style.background = on?'var(--surface3)':'none';
+    b.style.borderColor = on?'var(--border2)':'transparent';
+    b.style.color = on?'var(--text)':'var(--text-muted)';
+  });
+  document.getElementById('modalFixedFields').style.display='none';
+  ['fixedKcal','fixedP','fixedC','fixedF','fixedPortionLabel'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+}
 document.getElementById('cancelSave').addEventListener('click',()=>document.getElementById('modalAdd').classList.remove('open'));
 document.getElementById('modalAdd').addEventListener('click',e=>{if(e.target===document.getElementById('modalAdd'))document.getElementById('modalAdd').classList.remove('open');});
 document.getElementById('newFoodName').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('confirmSave').click();});
@@ -1754,6 +2100,240 @@ function renderRecipeList(){
 // ═══════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════
+// ═══════════════════════════════════════════
+// PRESET SEARCHABLE COMBOBOX (calc tab)
+// ═══════════════════════════════════════════
+presetSearchInput = document.getElementById('presetSearchInput');
+presetDropdown    = document.getElementById('presetDropdown');
+const presetSelectedDisplay = document.getElementById('presetSelectedDisplay');
+const presetSelectedName    = document.getElementById('presetSelectedName');
+
+function buildPresetDropdown(filter=''){
+  const q = filter.toLowerCase().trim();
+  presetDropdown.innerHTML = '';
+  const customIds = new Set(loadCustom().map(c=>c.id));
+  const groups = {};
+  allPresets().forEach(p=>{
+    if(q && !p.name.toLowerCase().includes(q) && !(p.emoji||'').includes(q) && !(p.group||'').toLowerCase().includes(q)) return;
+    const g = p.group||'Divers'; if(!groups[g]) groups[g]=[];groups[g].push(p);
+  });
+  const total = Object.values(groups).reduce((s,a)=>s+a.length,0);
+  if(!total){
+    presetDropdown.innerHTML='<div style="padding:10px 14px;font-size:11px;color:var(--text-dim);">Aucun résultat</div>';
+    return;
+  }
+  Object.entries(groups).forEach(([gName,items])=>{
+    const grp=document.createElement('div');
+    grp.style.cssText='font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-dim);padding:6px 14px 3px;background:var(--surface2);';
+    grp.textContent=gName; presetDropdown.appendChild(grp);
+    items.forEach(p=>{
+      const isCustom=customIds.has(p.id);
+      const opt=document.createElement('div');
+      opt.style.cssText='padding:7px 14px;font-size:13px;color:var(--text-muted);transition:all 0.1s;display:flex;justify-content:space-between;align-items:center;gap:8px;';
+      // left: name
+      const left=document.createElement('span');
+      left.style.cssText='flex:1;cursor:pointer;';
+      left.textContent=(p.emoji?p.emoji+' ':'')+p.name;
+      // right: kcal info + delete btn if custom
+      const rightWrap=document.createElement('span');
+      rightWrap.style.cssText='display:flex;align-items:center;gap:6px;flex:none;';
+      const info=document.createElement('span');
+      info.style.cssText='font-size:10px;color:var(--text-dim);';
+      info.textContent=p.fixed?(p.fixedKcal+' kcal/portion'+(p.fixedLabel?' · '+p.fixedLabel:'')):(p.kcal+' kcal/100g'+(p.servingG?' · '+p.servingG+'g':''));
+      rightWrap.appendChild(info);
+      if(isCustom){
+        const delBtn=document.createElement('button');
+        delBtn.textContent='×';
+        delBtn.title='Supprimer';
+        delBtn.style.cssText='background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:14px;padding:0 2px;line-height:1;transition:color 0.1s;';
+        delBtn.addEventListener('mouseenter',()=>delBtn.style.color='var(--red)');
+        delBtn.addEventListener('mouseleave',()=>delBtn.style.color='var(--text-dim)');
+        delBtn.addEventListener('mousedown',e=>{
+          e.preventDefault();e.stopPropagation();
+          if(!confirm('Supprimer "'+p.name+'" ?'))return;
+          deleteCustom(p.id);
+          buildPresetDropdown(presetSearchInput.value);
+        });
+        rightWrap.appendChild(delBtn);
+      }
+      opt.appendChild(left); opt.appendChild(rightWrap);
+      opt.addEventListener('mouseenter',()=>opt.style.background='var(--surface2)');
+      opt.addEventListener('mouseleave',()=>opt.style.background='');
+      left.addEventListener('mousedown',e=>{
+        e.preventDefault();
+        selectPreset(p.id);
+        presetSearchInput.value='';
+        presetDropdown.style.display='none';
+        presetSelectedName.textContent=(p.emoji?p.emoji+' ':'')+p.name;
+        presetSelectedDisplay.style.display='flex';
+      });
+      presetDropdown.appendChild(opt);
+    });
+  });
+}
+
+presetSearchInput.addEventListener('focus',()=>{buildPresetDropdown(presetSearchInput.value);presetDropdown.style.display='';});
+presetSearchInput.addEventListener('input',()=>{buildPresetDropdown(presetSearchInput.value);presetDropdown.style.display='';});
+presetSearchInput.addEventListener('blur',()=>{setTimeout(()=>{presetDropdown.style.display='none';},150);});
+presetSearchInput.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){presetDropdown.style.display='none';presetSearchInput.blur();}
+  if(e.key==='Enter'){
+    const first=presetDropdown.querySelector('[style*="cursor:pointer"]');
+    if(first) first.dispatchEvent(new MouseEvent('mousedown',{bubbles:true}));
+  }
+});
+document.getElementById('presetClearBtn').addEventListener('click',()=>{
+  activeId=null;
+  presetSelectedDisplay.style.display='none';
+  presetSearchInput.value='';
+  hidePortionRow();queryValueEl.value='';clearResults();
+  lastResult=null;document.getElementById('addMealBtn').disabled=true;
+  ['kcalPer100','rawRef','cookedRef','protRef','carbRef','fatRef'].forEach(id=>document.getElementById(id).value='');
+  updateRatio();
+});
+// override clearPresetBtn to also reset combobox display
+document.getElementById('clearPresetBtn').addEventListener('click',()=>{
+  activeId=null;
+  presetSelectedDisplay.style.display='none';
+  presetSearchInput.value='';
+  hidePortionRow();queryValueEl.value='';clearResults();lastResult=null;document.getElementById('addMealBtn').disabled=true;
+});
+
+// ═══════════════════════════════════════════
+// SAVED MEALS
+// ═══════════════════════════════════════════
+const LS_SAVED_MEALS = 'calorieSavedMeals_v1';
+const loadSavedMeals = ()=>{try{return JSON.parse(localStorage.getItem(LS_SAVED_MEALS)||'[]');}catch{return[];}};
+const saveSavedMeals = a=>localStorage.setItem(LS_SAVED_MEALS,JSON.stringify(a));
+
+// Save current meal type
+document.getElementById('saveMealBtn').addEventListener('click',()=>{
+  const data = getDayData(viewDateKey);
+  const items = data[activeMealType];
+  if(!items.length){alert('Le repas est vide.');return;}
+  const info = `${MEAL_LABELS[activeMealType]} · ${items.length} aliment(s) · ${Math.round(items.reduce((s,i)=>s+i.kcal,0))} kcal`;
+  document.getElementById('saveMealInfo').textContent=info;
+  document.getElementById('saveMealName').value='';
+  document.getElementById('modalSaveMeal').classList.add('open');
+  setTimeout(()=>document.getElementById('saveMealName').focus(),80);
+});
+document.getElementById('confirmSaveMeal').addEventListener('click',()=>{
+  const name=document.getElementById('saveMealName').value.trim();
+  if(!name){document.getElementById('saveMealName').focus();return;}
+  const data=getDayData(viewDateKey);
+  const arr=loadSavedMeals();
+  arr.push({id:'sm_'+Date.now(), name, mtype:activeMealType, items:JSON.parse(JSON.stringify(data[activeMealType])), savedAt:new Date().toISOString()});
+  saveSavedMeals(arr);
+  document.getElementById('modalSaveMeal').classList.remove('open');
+});
+document.getElementById('cancelSaveMeal').addEventListener('click',()=>document.getElementById('modalSaveMeal').classList.remove('open'));
+document.getElementById('saveMealName').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('confirmSaveMeal').click();});
+
+// Show saved meals (via sl-btn — we add a load button in the meal section)
+function openSavedMeals(){
+  const arr=loadSavedMeals();
+  const list=document.getElementById('savedMealsList');
+  list.innerHTML='';
+  if(!arr.length){list.innerHTML='<div style="font-size:11px;color:var(--text-dim);text-align:center;padding:16px;">Aucun repas sauvegardé</div>';
+  }else{
+    arr.forEach((sm,i)=>{
+      const row=document.createElement('div');
+      row.style.cssText='background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:10px 12px;';
+      const kcal=Math.round(sm.items.reduce((s,x)=>s+x.kcal,0));
+      row.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+        <div>
+          <div style="font-size:12px;color:var(--text);">${sm.name}</div>
+          <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">${sm.items.length} aliment(s) · ${kcal} kcal · ${MEAL_LABELS[sm.mtype]}</div>
+        </div>
+        <div style="display:flex;gap:6px;flex:none;">
+          <button class="load-add-btn" data-idx="${i}" style="background:none;border:1px solid var(--accent-dim);border-radius:2px;color:var(--accent-dim);font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.08em;text-transform:uppercase;padding:4px 8px;cursor:pointer;">+ Ajouter</button>
+          <button class="load-replace-btn" data-idx="${i}" style="background:var(--accent);border:none;border-radius:2px;color:var(--bg);font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.08em;text-transform:uppercase;padding:4px 8px;cursor:pointer;">Remplacer</button>
+          <button class="del-saved-btn" data-idx="${i}" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:14px;padding:0 4px;line-height:1;">×</button>
+        </div>
+      </div>`;
+      list.appendChild(row);
+    });
+    list.querySelectorAll('.load-add-btn').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        const sm=arr[parseInt(btn.dataset.idx)];
+        const d=getDayData(viewDateKey);
+        sm.items.forEach(item=>d[activeMealType].push({...item,id:Date.now()+Math.random()}));
+        setDayData(viewDateKey,d);renderMealSection();updateGoalBanner();
+        document.getElementById('modalLoadMeal').classList.remove('open');
+      });
+    });
+    list.querySelectorAll('.load-replace-btn').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        const sm=arr[parseInt(btn.dataset.idx)];
+        const d=getDayData(viewDateKey);
+        d[activeMealType]=sm.items.map(item=>({...item,id:Date.now()+Math.random()}));
+        setDayData(viewDateKey,d);renderMealSection();updateGoalBanner();
+        document.getElementById('modalLoadMeal').classList.remove('open');
+      });
+    });
+    list.querySelectorAll('.del-saved-btn').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        const updated=loadSavedMeals().filter((_,i)=>i!==parseInt(btn.dataset.idx));
+        saveSavedMeals(updated);openSavedMeals();
+      });
+    });
+  }
+  document.getElementById('modalLoadMeal').classList.add('open');
+}
+document.getElementById('cancelLoadMeal').addEventListener('click',()=>document.getElementById('modalLoadMeal').classList.remove('open'));
+document.getElementById('modalLoadMeal').addEventListener('click',e=>{if(e.target===document.getElementById('modalLoadMeal'))document.getElementById('modalLoadMeal').classList.remove('open');});
+
+// ═══════════════════════════════════════════
+// DUPLICATE MEAL / DAY
+// ═══════════════════════════════════════════
+
+// Dup meal (single repas type)
+let dupMealSourceType = null;
+function openDupMeal(srcType){
+  dupMealSourceType=srcType;
+  document.getElementById('dupMealSource').textContent=`Source : ${MEAL_LABELS[srcType]} du ${fmtDateKey(viewDateKey)}`;
+  // default target = same type
+  document.getElementById('dupMealTargetType').value=srcType;
+  document.getElementById('dupMealTargetDate').value=todayKey();
+  document.getElementById('modalDupMeal').classList.add('open');
+}
+document.getElementById('confirmDupMeal').addEventListener('click',()=>{
+  const targetType=document.getElementById('dupMealTargetType').value;
+  const targetDate=document.getElementById('dupMealTargetDate').value;
+  if(!targetDate)return;
+  const src=getDayData(viewDateKey)[dupMealSourceType];
+  const d=getDayData(targetDate);
+  src.forEach(item=>d[targetType].push({...item,id:Date.now()+Math.random()}));
+  setDayData(targetDate,d);
+  document.getElementById('modalDupMeal').classList.remove('open');
+  if(targetDate===viewDateKey){activeMealType=targetType;document.querySelectorAll('.meal-type-tab').forEach(b=>b.classList.toggle('active',b.dataset.mtype===targetType));renderMealSection();updateGoalBanner();}
+});
+document.getElementById('cancelDupMeal').addEventListener('click',()=>document.getElementById('modalDupMeal').classList.remove('open'));
+document.getElementById('modalDupMeal').addEventListener('click',e=>{if(e.target===document.getElementById('modalDupMeal'))document.getElementById('modalDupMeal').classList.remove('open');});
+
+// Dup day
+document.getElementById('dupDayBtn').addEventListener('click',()=>{
+  document.getElementById('dupDaySource').textContent=`Copie de : ${fmtDateKey(viewDateKey)}`;
+  // default: tomorrow
+  const d=new Date(viewDateKey+'T12:00:00');d.setDate(d.getDate()+1);
+  document.getElementById('dupDayTargetDate').value=d.toISOString().slice(0,10);
+  document.getElementById('modalDupDay').classList.add('open');
+});
+document.getElementById('confirmDupDay').addEventListener('click',()=>{
+  const targetDate=document.getElementById('dupDayTargetDate').value;
+  if(!targetDate||targetDate===viewDateKey){alert('Choisis un jour différent.');return;}
+  const srcData=getDayData(viewDateKey);
+  const copy={};
+  MEAL_TYPES.forEach(t=>{copy[t]=srcData[t].map(item=>({...item,id:Date.now()+Math.random()}));});
+  setDayData(targetDate,copy);
+  document.getElementById('modalDupDay').classList.remove('open');
+  // navigate to target day
+  viewDateKey=targetDate;updateDateNav();renderMealSection();updateGoalBanner();
+});
+document.getElementById('cancelDupDay').addEventListener('click',()=>document.getElementById('modalDupDay').classList.remove('open'));
+document.getElementById('modalDupDay').addEventListener('click',e=>{if(e.target===document.getElementById('modalDupDay'))document.getElementById('modalDupDay').classList.remove('open');});
+
+
 renderPresets();
 updateDateNav();
 renderMealSection();
