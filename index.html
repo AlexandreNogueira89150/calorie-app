@@ -3065,7 +3065,6 @@ document.querySelectorAll('.add-ing-tab').forEach(btn=>{
 // ── Searchable ingredient combobox
 const ingSearchInput=document.getElementById('ingSearchInput');
 const ingDropdown=document.getElementById('ingDropdown');
-const bIngSelectValue=document.getElementById('bIngSelectValue');
 let selectedIngPreset=null; // preset object
 
 function buildIngDropdown(filter=''){
@@ -3111,7 +3110,6 @@ function buildIngDropdown(filter=''){
 
 function selectIngPreset(p){
   selectedIngPreset=p;
-  bIngSelectValue.value=p.id;
   ingSearchInput.value='';
   ingSearchInput.blur();
   ingDropdown.innerHTML='';
@@ -3124,7 +3122,7 @@ function selectIngPreset(p){
 }
 
 function clearIngSelection(){
-  selectedIngPreset=null;bIngSelectValue.value='';ingSearchInput.value='';
+  selectedIngPreset=null;ingSearchInput.value='';
   document.getElementById('bIngSelectedDisplay').style.display='none';
   document.getElementById('bPortionHint').style.display='none';
   document.getElementById('bIngQtyLabel').textContent='Quantité (g)';
