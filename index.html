@@ -1456,7 +1456,7 @@ body{
         <input type="text" id="ingSearchInput" class="search-input" placeholder="Filtrer… ex: riz, ban, pou" autocomplete="off">
         <div style="display:none;position:absolute;top:100%;left:0;right:0;z-index:50;background:var(--surface);border:1.5px solid var(--accent);border-top:none;border-radius:0 0 var(--radius-sm) var(--radius-sm);max-height:220px;overflow-y:auto;box-shadow:var(--shadow-md);" id="ingDropdown"></div>
       </div>
-      <div id="bIngSelectedDisplay" style="display:none;margin-bottom:8px;font-size:12px;color:var(--text-muted);padding:8px 12px;background:var(--accent-light);border:1.5px solid var(--accent);border-radius:var(--radius-sm);display:flex;align-items:center;">
+      <div id="bIngSelectedDisplay" style="display:none;margin-bottom:8px;font-size:12px;color:var(--text-muted);padding:8px 12px;background:var(--accent-light);border:1.5px solid var(--accent);border-radius:var(--radius-sm);align-items:center;">
         <span>Sélectionné : <span id="bIngSelectedName" style="color:var(--text);font-weight:600;"></span></span>
         <button id="bIngClearSelection" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:14px;padding:0;line-height:1;margin-left:auto;">×</button>
       </div>
@@ -1993,17 +1993,7 @@ async function onLoginPullAndRefresh(){
   console.log('[sync] Prêt');
 }
 
-// Hook into auth change
-const _originalAuthChange = window._onAuthChange;
-window._onAuthChange = function(user){
-  if(_originalAuthChange) _originalAuthChange(user);
-  if(user){
-    onLoginPullAndRefresh();
-  } else {
-    _syncEnabled = false;
-    _syncReady = false;
-  }
-};
+// (Hook moved to main auth handler below)
 
 
 
@@ -2062,10 +2052,15 @@ window._onAuthChange = function(user){
     hideLoginScreen();
     updateUserBadge(user);
     console.log('Connecté:', user.uid, user.email || 'anonyme');
-    // TODO étape 2 : sync Firestore
+    // Trigger Firestore sync
+    if(typeof onLoginPullAndRefresh === 'function'){
+      onLoginPullAndRefresh().catch(e=>console.error('[sync] Init error:',e));
+    }
   } else {
     showLoginScreen();
     updateUserBadge(null);
+    _syncEnabled = false;
+    _syncReady = false;
   }
 };
 
@@ -2080,13 +2075,22 @@ waitForFirebase(()=>{
           createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } = window.firebase;
 
   // Google login
+  let _googleInProgress = false;
   document.getElementById('loginGoogleBtn').addEventListener('click', async()=>{
+    if(_googleInProgress) return;
+    _googleInProgress = true;
+    document.getElementById('loginGoogleBtn').disabled = true;
     try{
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
     }catch(e){
       console.error(e);
-      showLoginError(e.message || 'Erreur de connexion Google');
+      if(e.code !== 'auth/cancelled-popup-request' && e.code !== 'auth/popup-closed-by-user'){
+        showLoginError(e.message || 'Erreur de connexion Google');
+      }
+    } finally {
+      _googleInProgress = false;
+      document.getElementById('loginGoogleBtn').disabled = false;
     }
   });
 
@@ -3110,7 +3114,7 @@ function selectIngPreset(p){
   ingDropdown.style.display='none';
   // show selected display
   document.getElementById('bIngSelectedName').textContent=(p.emoji?p.emoji+' ':'')+p.name;
-  document.getElementById('bIngSelectedDisplay').style.display='';
+  document.getElementById('bIngSelectedDisplay').style.display='flex';
   updateIngQtyMode();
   document.getElementById('bIngQtyPreset').focus();
 }
@@ -3124,8 +3128,8 @@ function clearIngSelection(){
   document.getElementById('bIngQtyPreset').placeholder='ex. 150';
 }
 
-ingSearchInput.addEventListener('focus',()=>{buildIngDropdown(ingSearchInput.value);ingDropdown.style.display='';});
-ingSearchInput.addEventListener('input',()=>{buildIngDropdown(ingSearchInput.value);ingDropdown.style.display='';});
+ingSearchInput.addEventListener('focus',()=>{buildIngDropdown(ingSearchInput.value);ingDropdown.style.display='block';});
+ingSearchInput.addEventListener('input',()=>{buildIngDropdown(ingSearchInput.value);ingDropdown.style.display='block';});
 ingSearchInput.addEventListener('blur',()=>{setTimeout(()=>{ingDropdown.style.display='none';},150);});
 ingSearchInput.addEventListener('keydown',e=>{
   if(e.key==='Escape'){ingDropdown.style.display='none';ingSearchInput.blur();}
