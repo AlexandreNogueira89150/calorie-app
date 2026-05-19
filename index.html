@@ -1850,6 +1850,164 @@ body{
 'use strict';
 
 // ═══════════════════════════════════════════
+// FIRESTORE SYNC LAYER
+// ═══════════════════════════════════════════
+let _syncReady = false;          // true after initial Firestore load
+let _syncEnabled = false;        // true when user is logged in
+let _saveTimers = {};            // debounce timers per key
+const SAVE_DEBOUNCE_MS = 800;
+
+// Map LS keys to Firestore doc paths (under users/{uid}/data/)
+const FS_DOCS = {
+  customPresets:  { lsKey:'calorieCustomPresets_v2', field:'items', defaultVal:[] },
+  recipes:        { lsKey:'calorieRecipes_v1',       field:'items', defaultVal:[] },
+  savedMeals:     { lsKey:'calorieSavedMeals_v1',    field:'items', defaultVal:[] },
+  mealsHistory:   { lsKey:'calorieMealsHistory_v1',  field:'data',  defaultVal:{} },
+  profil:         { lsKey:'calorieProfilV1',         field:'data',  defaultVal:{} },
+  settings:       { lsKey:null,                       field:null,    defaultVal:null }, // goal handled separately
+};
+
+function fsDocRef(key){
+  if(!currentUser || !window.firebase) return null;
+  const { doc, db } = window.firebase;
+  return doc(db, 'users', currentUser.uid, 'data', key);
+}
+
+// Pull all data from Firestore into localStorage on login
+async function syncPullAll(){
+  if(!currentUser || !window.firebase){return;}
+  const { getDoc } = window.firebase;
+  console.log('[sync] Pull from Firestore…');
+  try{
+    for(const [key, meta] of Object.entries(FS_DOCS)){
+      if(key === 'settings') continue;
+      const ref = fsDocRef(key);
+      const snap = await getDoc(ref);
+      if(snap.exists()){
+        const data = snap.data();
+        if(meta.lsKey){
+          localStorage.setItem(meta.lsKey, JSON.stringify(data[meta.field] || meta.defaultVal));
+        }
+      }
+    }
+    // Settings (goal)
+    const settingsRef = fsDocRef('settings');
+    const settingsSnap = await getDoc(settingsRef);
+    if(settingsSnap.exists()){
+      const s = settingsSnap.data();
+      if(s.goal != null) localStorage.setItem('calorieGoal', String(s.goal));
+    }
+    console.log('[sync] Pull terminé');
+  }catch(e){
+    console.error('[sync] Pull error:', e);
+  }
+}
+
+// Push data to Firestore (debounced per key)
+function syncPush(key, payload){
+  if(!_syncEnabled || !currentUser) return;
+  if(_saveTimers[key]) clearTimeout(_saveTimers[key]);
+  _saveTimers[key] = setTimeout(async()=>{
+    try{
+      const { setDoc } = window.firebase;
+      const ref = fsDocRef(key);
+      if(!ref) return;
+      await setDoc(ref, payload, { merge: true });
+      console.log('[sync] Push:', key);
+    }catch(e){
+      console.error('[sync] Push error:', key, e);
+    }
+  }, SAVE_DEBOUNCE_MS);
+}
+
+// Push from localStorage to Firestore (used after each LS save)
+function syncPushKey(fsKey){
+  const meta = FS_DOCS[fsKey];
+  if(!meta || !meta.lsKey) return;
+  try{
+    const raw = localStorage.getItem(meta.lsKey);
+    const val = raw ? JSON.parse(raw) : meta.defaultVal;
+    syncPush(fsKey, { [meta.field]: val });
+  }catch(e){console.error('syncPushKey',fsKey,e);}
+}
+
+// First-time login: migrate existing localStorage data to Firestore
+async function syncMigrateLocalToFirestore(){
+  if(!currentUser || !window.firebase) return;
+  console.log('[sync] Migration localStorage → Firestore');
+  for(const [key, meta] of Object.entries(FS_DOCS)){
+    if(key === 'settings') continue;
+    if(!meta.lsKey) continue;
+    const raw = localStorage.getItem(meta.lsKey);
+    if(!raw) continue;
+    try{
+      const val = JSON.parse(raw);
+      syncPush(key, { [meta.field]: val });
+    }catch{}
+  }
+  // Goal
+  const goal = localStorage.getItem('calorieGoal');
+  if(goal) syncPush('settings', { goal: parseFloat(goal) });
+}
+
+// On auth state change: pull data and re-render
+async function onLoginPullAndRefresh(){
+  _syncEnabled = false;
+  await syncPullAll();
+  // If Firestore was empty for this user, migrate local data up
+  const { getDoc } = window.firebase;
+  const ref = fsDocRef('customPresets');
+  const snap = await getDoc(ref);
+  const firestoreEmpty = !snap.exists();
+  _syncEnabled = true;
+  _syncReady = true;
+  if(firestoreEmpty){
+    await syncMigrateLocalToFirestore();
+  }
+  // Refresh UI everywhere
+  if(typeof renderPresets === 'function') renderPresets();
+  if(typeof renderMealSection === 'function') renderMealSection();
+  if(typeof renderRecipeList === 'function') renderRecipeList();
+  if(typeof updateGoalBanner === 'function'){
+    const g = localStorage.getItem('calorieGoal');
+    if(g){
+      document.getElementById('goalInput').value = g;
+      const g2 = document.getElementById('goalInput2');
+      if(g2) g2.value = g;
+    }
+    updateGoalBanner();
+  }
+  if(typeof calcProfil === 'function'){
+    // Refresh profil inputs from localStorage
+    const p = (()=>{try{return JSON.parse(localStorage.getItem('calorieProfilV1')||'{}');}catch{return{};}})();
+    if(p.sexe) document.getElementById('profilSexe').value=p.sexe;
+    if(p.age)  document.getElementById('profilAge').value=p.age;
+    if(p.poids) document.getElementById('profilPoids').value=p.poids;
+    if(p.taille) document.getElementById('profilTaille').value=p.taille;
+    if(p.activite) document.getElementById('profilActivite').value=p.activite;
+    if(p.objectif){
+      document.querySelectorAll('.profil-obj-btn').forEach(b=>b.classList.toggle('active',b.dataset.obj===p.objectif));
+    }
+    calcProfil();
+  }
+  console.log('[sync] Prêt');
+}
+
+// Hook into auth change
+const _originalAuthChange = window._onAuthChange;
+window._onAuthChange = function(user){
+  if(_originalAuthChange) _originalAuthChange(user);
+  if(user){
+    onLoginPullAndRefresh();
+  } else {
+    _syncEnabled = false;
+    _syncReady = false;
+  }
+};
+
+
+
+// ═══════════════════════════════════════════
 // AUTHENTIFICATION FIREBASE
 // ═══════════════════════════════════════════
 let currentUser = null;
@@ -2060,10 +2218,10 @@ const LS_RECIPES='calorieRecipes_v1';
 const LS_GOAL='calorieGoal';
 
 const loadCustom=()=>{try{return JSON.parse(localStorage.getItem(LS_CUSTOM)||'[]');}catch{return[];}};
-const saveCustom=a=>localStorage.setItem(LS_CUSTOM,JSON.stringify(a));
+const saveCustom=a=>{localStorage.setItem(LS_CUSTOM,JSON.stringify(a));syncPushKey('customPresets');};
 const allPresets=()=>[...DEFAULT_PRESETS,...loadCustom().map(p=>({...p,group:p.group||'Mes aliments'}))];
 const loadRecipes=()=>{try{return JSON.parse(localStorage.getItem(LS_RECIPES)||'[]');}catch{return[];}};
-const saveRecipes=a=>localStorage.setItem(LS_RECIPES,JSON.stringify(a));
+const saveRecipes=a=>{localStorage.setItem(LS_RECIPES,JSON.stringify(a));syncPushKey('recipes');};
 
 // ═══════════════════════════════════════════
 // MEAL HISTORY
@@ -2078,7 +2236,7 @@ function fmtDateKey(k){
 }
 
 function loadHistory(){try{return JSON.parse(localStorage.getItem(LS_MEALS)||'{}');}catch{return{};}}
-function saveHistory(h){localStorage.setItem(LS_MEALS,JSON.stringify(h));}
+function saveHistory(h){localStorage.setItem(LS_MEALS,JSON.stringify(h));syncPushKey('mealsHistory');}
 
 function getDayData(dateKey){
   const h=loadHistory();
@@ -2126,6 +2284,7 @@ const goalInput=document.getElementById('goalInput');
 goalInput.value=localStorage.getItem(LS_GOAL)||'';
 goalInput.addEventListener('input',()=>{
   localStorage.setItem(LS_GOAL,goalInput.value);
+  syncPush('settings',{goal:parseFloat(goalInput.value)||0});
   updateGoalBanner();
 });
 function updateGoalBanner(){
@@ -3449,7 +3608,7 @@ document.getElementById('clearPresetBtn').addEventListener('click',()=>{
 // ═══════════════════════════════════════════
 const LS_SAVED_MEALS = 'calorieSavedMeals_v1';
 const loadSavedMeals = ()=>{try{return JSON.parse(localStorage.getItem(LS_SAVED_MEALS)||'[]');}catch{return[];}};
-const saveSavedMeals = a=>localStorage.setItem(LS_SAVED_MEALS,JSON.stringify(a));
+const saveSavedMeals = a=>{localStorage.setItem(LS_SAVED_MEALS,JSON.stringify(a));syncPushKey('savedMeals');};
 
 // Save current meal type
 document.getElementById('saveMealBtn').addEventListener('click',()=>{
@@ -3613,7 +3772,7 @@ function updateNavBadges(){
 const LS_PROFIL = 'calorieProfilV1';
 
 function loadProfil(){try{return JSON.parse(localStorage.getItem(LS_PROFIL)||'{}');}catch{return{};}}
-function saveProfil(p){localStorage.setItem(LS_PROFIL,JSON.stringify(p));}
+function saveProfil(p){localStorage.setItem(LS_PROFIL,JSON.stringify(p));syncPushKey('profil');}
 
 // Restore saved profil on load
 (function(){
@@ -3718,6 +3877,7 @@ document.getElementById('profilApplyBtn').addEventListener('click',()=>{
   if(!kcal)return;
   goalInput.value = kcal;
   localStorage.setItem(LS_GOAL, kcal);
+  syncPush('settings',{goal:kcal});
   updateGoalBanner();
   // Visual feedback
   const btn = document.getElementById('profilApplyBtn');
