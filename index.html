@@ -3098,10 +3098,12 @@ function buildIngDropdown(filter=''){
       opt.appendChild(left);opt.appendChild(right);
       opt.addEventListener('mouseenter',()=>opt.style.background='var(--surface2)');
       opt.addEventListener('mouseleave',()=>opt.style.background='');
-      opt.addEventListener('mousedown',e=>{
-        e.preventDefault(); // prevent blur before click
+      const handleSelect = (e)=>{
+        if(e){e.preventDefault();e.stopPropagation();}
         selectIngPreset(p);
-      });
+      };
+      opt.addEventListener('mousedown', handleSelect);
+      opt.addEventListener('touchstart', handleSelect, {passive:false});
       ingDropdown.appendChild(opt);
     });
   });
@@ -3111,12 +3113,14 @@ function selectIngPreset(p){
   selectedIngPreset=p;
   bIngSelectValue.value=p.id;
   ingSearchInput.value='';
+  ingSearchInput.blur();
+  ingDropdown.innerHTML='';
   ingDropdown.style.display='none';
-  // show selected display
   document.getElementById('bIngSelectedName').textContent=(p.emoji?p.emoji+' ':'')+p.name;
   document.getElementById('bIngSelectedDisplay').style.display='flex';
   updateIngQtyMode();
-  document.getElementById('bIngQtyPreset').focus();
+  // small delay to let blur settle before focus on qty
+  setTimeout(()=>document.getElementById('bIngQtyPreset').focus(),50);
 }
 
 function clearIngSelection(){
@@ -3567,14 +3571,18 @@ function buildPresetDropdown(filter=''){
       opt.appendChild(left); opt.appendChild(rightWrap);
       opt.addEventListener('mouseenter',()=>opt.style.background='var(--surface2)');
       opt.addEventListener('mouseleave',()=>opt.style.background='');
-      left.addEventListener('mousedown',e=>{
-        e.preventDefault();
+      const handleSelect=(e)=>{
+        if(e){e.preventDefault();e.stopPropagation();}
         selectPreset(p.id);
         presetSearchInput.value='';
+        presetSearchInput.blur();
+        presetDropdown.innerHTML='';
         presetDropdown.style.display='none';
         presetSelectedName.textContent=(p.emoji?p.emoji+' ':'')+p.name;
         presetSelectedDisplay.style.display='flex';
-      });
+      };
+      left.addEventListener('mousedown', handleSelect);
+      left.addEventListener('touchstart', handleSelect, {passive:false});
       presetDropdown.appendChild(opt);
     });
   });
