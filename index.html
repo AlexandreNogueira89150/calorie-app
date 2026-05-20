@@ -3512,13 +3512,28 @@ document.getElementById('newRecipeBtn').addEventListener('click',()=>{
 });
 document.getElementById('bCancelBtn').addEventListener('click',()=>{document.getElementById('recipeBuilder').classList.remove('open');builderIngredients=[];editingRecipeId=null;});
 document.getElementById('bSaveBtn').addEventListener('click',()=>{
-  const name=document.getElementById('bName').value.trim();if(!name){document.getElementById('bName').focus();return;}
-  if(!builderIngredients.length){alert('Ajoute au moins un ingrédient.');return;}
-  const emoji=document.getElementById('bEmoji').value.trim()||'🍲',id=editingRecipeId||('r_'+Date.now());
-  const existing=loadRecipes().find(r=>r.id===id);
-  const recipes=loadRecipes().filter(r=>r.id!==id);
-  recipes.push({id,name,emoji,ingredients:JSON.parse(JSON.stringify(builderIngredients)),servings:existing?existing.servings:1,cookedWeight:existing?existing.cookedWeight:null,createdAt:existing?existing.createdAt:new Date().toISOString()});
-  saveRecipes(recipes);document.getElementById('recipeBuilder').classList.remove('open');builderIngredients=[];editingRecipeId=null;renderRecipeList();
+  try{
+    const name=document.getElementById('bName').value.trim();if(!name){document.getElementById('bName').focus();return;}
+    if(!builderIngredients.length){alert('Ajoute au moins un ingrédient.');return;}
+    const emoji=document.getElementById('bEmoji').value.trim()||'🍲',id=editingRecipeId||('r_'+Date.now());
+    const existing=loadRecipes().find(r=>r.id===id);
+    const recipes=loadRecipes().filter(r=>r.id!==id);
+    const newRecipe={id,name,emoji,
+      ingredients:JSON.parse(JSON.stringify(builderIngredients)),
+      servings:existing?existing.servings:1,
+      cookedWeight:existing?existing.cookedWeight:null,
+      createdAt:existing?existing.createdAt:new Date().toISOString(),
+      addedBy:currentUser?currentUser.uid:null
+    };
+    recipes.push(newRecipe);
+    saveRecipes(recipes);
+    document.getElementById('recipeBuilder').classList.remove('open');
+    builderIngredients=[];editingRecipeId=null;
+    renderRecipeList();
+  }catch(e){
+    console.error('[bSaveBtn] Error saving recipe:',e);
+    alert('Erreur lors de la sauvegarde : '+(e.message||e));
+  }
 });
 
 // ═══════════════════════════════════════════
@@ -3993,10 +4008,12 @@ function navigateTo(panel){
     b.classList.toggle('active',b.dataset.nav===panel);
   });
   try{localStorage.setItem('calorieActivePanel',panel);}catch{}
-  if(panel==='meals'){renderMealSection();updateGoalBanner();}
-  if(panel==='recipes'){renderRecipeList();populateIngSelect();}
-  if(panel==='profil'){calcProfil();}
-  if(panel==='family'){refreshFamilyUI();}
+  try{
+    if(panel==='meals'){renderMealSection();updateGoalBanner();}
+    if(panel==='recipes'){renderRecipeList();populateIngSelect();}
+    if(panel==='profil'){calcProfil();}
+    if(panel==='family'){refreshFamilyUI();}
+  }catch(e){console.error('[nav] Error in panel',panel,e);}
 }
 document.querySelectorAll('.nav-item,[class*="bottom-nav-item"]').forEach(btn=>{
   btn.addEventListener('click',()=>{
