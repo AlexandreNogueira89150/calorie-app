@@ -2112,14 +2112,32 @@ async function syncMigrateLocalToFirestore(){
 // ── On login: bootstrap family, pull, migrate if needed, refresh UI
 async function onLoginPullAndRefresh(){
   _syncEnabled = false;
-  await ensureFamily();
+  try{
+    await ensureFamily();
+  }catch(e){
+    console.error('[sync] ensureFamily FAILED:', e.code||'', e.message||e);
+    // Show error to user
+    alert('Erreur de synchronisation famille : '+(e.message||'vérifie les règles Firestore.')+'\n\nL\'app fonctionne en mode local.');
+    _syncEnabled = false;
+    _syncReady = false;
+    return; // continue with localStorage only
+  }
   if(!currentFamilyId){console.warn('[sync] Pas de famille');return;}
-  await syncPullAll();
-  await loadMembersCache();
+  try{
+    await syncPullAll();
+    await loadMembersCache();
+  }catch(e){
+    console.error('[sync] Pull/members error:', e);
+  }
   // Migrate if shared customPresets doesn't exist yet
-  const { getDoc } = window.firebase;
-  const snap = await getDoc(sharedDocRef('customPresets'));
-  const needMigration = !snap.exists();
+  let needMigration = false;
+  try{
+    const { getDoc } = window.firebase;
+    const snap = await getDoc(sharedDocRef('customPresets'));
+    needMigration = !snap.exists();
+  }catch(e){
+    console.error('[sync] Migration check error:', e);
+  }
   _syncEnabled = true;
   _syncReady = true;
   if(needMigration){
@@ -3365,13 +3383,15 @@ function updateIngQtyMode(){
   const inp=document.getElementById('bIngQtyPreset');
   if(p&&p.servingG){
     hint.style.display='';hint.textContent=`↳ Portion prédéfinie : ${p.servingG}g/pièce`;
-    lbl.textContent='Nb de pièces / portions';unit.textContent='×';inp.placeholder='ex. 2';inp.value='';
     document.getElementById('bIngPortionSize').value=p.servingG;
   }else{
-    hint.style.display='none';lbl.textContent='Quantité (g)';unit.textContent='g';inp.placeholder='ex. 150';inp.value='';
+    hint.style.display='none';
     if(!document.getElementById('bIngPortionSize').value)
       document.getElementById('bIngPortionSize').value='';
   }
+  // Always keep grams mode label as grams — don't override
+  lbl.textContent='Quantité (g)';unit.textContent='g';inp.placeholder='ex. 150';
+  inp.value='';
   updatePortionPreview();
 }
 
@@ -3436,23 +3456,29 @@ document.getElementById('bAddIngManual').addEventListener('click',()=>{
 });
 
 function renderBuilderIngredients(){
-  const container=document.getElementById('builderIngredientsList'),empty=document.getElementById('bIngEmpty');
+  const container=document.getElementById('builderIngredientsList');
+  // Clear all children except bIngEmpty (which we detach first)
+  let empty=document.getElementById('bIngEmpty');
+  if(empty && empty.parentNode===container) container.removeChild(empty);
   container.innerHTML='';
   document.getElementById('bIngCount').textContent=builderIngredients.length?`(${builderIngredients.length})`:'';
-  if(!builderIngredients.length){container.appendChild(empty);empty.style.display='';return;}
-  empty.style.display='none';
+  if(!builderIngredients.length){
+    if(!empty){empty=document.createElement('div');empty.id='bIngEmpty';empty.className='empty-state';empty.style.padding='16px';empty.innerHTML='<div class="empty-state-icon">🥘</div>Aucun ingrédient ajouté';}
+    empty.style.display='';container.appendChild(empty);return;
+  }
+  if(empty) empty.style.display='none';
   builderIngredients.forEach((ing,i)=>{
     const kT=ing.rawG*(ing.kcal/100);
     const row=document.createElement('div');
-    row.style.cssText='display:grid;grid-template-columns:1fr 90px auto auto;gap:6px;align-items:center;background:var(--surface2);border-radius:3px;padding:8px 10px;font-size:11px;';
-    const nameEl=document.createElement('span');nameEl.style.cssText='color:var(--text);font-size:12px;line-height:1.3;word-break:break-word;';nameEl.textContent=(ing.emoji||'')+' '+ing.name;
+    row.style.cssText='display:grid;grid-template-columns:1fr 80px auto auto;gap:8px;align-items:center;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;font-size:12px;box-shadow:var(--shadow);';
+    const nameEl=document.createElement('span');nameEl.style.cssText='color:var(--text);font-weight:500;font-size:13px;line-height:1.3;word-break:break-word;';nameEl.textContent=(ing.emoji||'')+' '+ing.name;
     const qtyWrap=document.createElement('div');qtyWrap.style.cssText='position:relative;display:flex;align-items:center;';
-    const qtyIn=document.createElement('input');qtyIn.type='number';qtyIn.value=ing.rawG;qtyIn.min=0;qtyIn.step=1;
-    qtyIn.style.cssText='width:100%;background:var(--surface);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:inherit;font-size:12px;padding:5px 22px 5px 8px;outline:none;appearance:none;-moz-appearance:textfield;';
+    const qtyIn=document.createElement('input');qtyIn.type='number';qtyIn.value=ing.rawG;qtyIn.min=0;qtyIn.step=1;qtyIn.inputMode='decimal';
+    qtyIn.style.cssText='width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:5px;color:var(--text);font-family:inherit;font-size:13px;padding:6px 24px 6px 8px;outline:none;appearance:none;-moz-appearance:textfield;';
     qtyIn.addEventListener('change',()=>{const v=parseFloat(qtyIn.value);if(v>0){builderIngredients[i].rawG=v;renderBuilderIngredients();}});
-    const qtyUnit=document.createElement('span');qtyUnit.textContent='g';qtyUnit.style.cssText='position:absolute;right:6px;font-size:9px;color:var(--text-dim);pointer-events:none;';
+    const qtyUnit=document.createElement('span');qtyUnit.textContent='g';qtyUnit.style.cssText='position:absolute;right:8px;font-size:10px;color:var(--text-dim);pointer-events:none;';
     qtyWrap.appendChild(qtyIn);qtyWrap.appendChild(qtyUnit);
-    const kcalEl=document.createElement('span');kcalEl.style.cssText='color:var(--accent);font-size:10px;text-align:right;white-space:nowrap;';kcalEl.textContent=fmt(kT,0)+' kcal';
+    const kcalEl=document.createElement('span');kcalEl.style.cssText='color:var(--accent);font-size:12px;font-weight:600;text-align:right;white-space:nowrap;';kcalEl.textContent=fmt(kT,0)+' kcal';
     const delBtn=document.createElement('button');delBtn.className='bi-del';delBtn.textContent='×';
     delBtn.addEventListener('click',()=>{builderIngredients.splice(i,1);renderBuilderIngredients();});
     row.appendChild(nameEl);row.appendChild(qtyWrap);row.appendChild(kcalEl);row.appendChild(delBtn);
