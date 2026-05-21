@@ -3539,11 +3539,12 @@ document.getElementById('bSaveBtn').addEventListener('click',()=>{
 // ═══════════════════════════════════════════
 // ADD RECIPE TO MEAL
 // ═══════════════════════════════════════════
-function addRecipeToMeal(recipe,tK,tP,tC,tF,tR,hM,factor,label,mtype){
+function addRecipeToMeal(recipe,tK,tP,tC,tF,tR,hM,factor,label,mtype,servedG){
   const d=getDayData(viewDateKey);
+  const qty=(servedG!=null&&servedG>0)?servedG:tR*factor;
   d[mtype].push({
     name:`${recipe.emoji} ${recipe.name} (${label})`,emoji:recipe.emoji,
-    rawG:Math.round(tR*factor*10)/10,cookedG:null,
+    rawG:Math.round(qty*10)/10,cookedG:null,
     kcal:Math.round(tK*factor*10)/10,
     p:tP!=null?Math.round(tP*factor*100)/100:null,
     c:tC!=null?Math.round(tC*factor*100)/100:null,
@@ -3719,7 +3720,8 @@ function renderRecipeList(){
       e.stopPropagation();
       const n=Math.max(1,parseFloat(card.querySelector('.add-n-parts').value)||1);
       const mtype=card.querySelector('.recipe-meal-type').value;
-      addRecipeToMeal(recipe,tK,tP,tC,tF,tR,hM,n/getServings(),n===1?'1 part':`${n} parts`,mtype);
+      const factor=n/getServings();
+      addRecipeToMeal(recipe,tK,tP,tC,tF,tR,hM,factor,n===1?'1 part':`${n} parts`,mtype,factor*getWeightRefSafe());
       const btn=e.currentTarget;const orig=btn.textContent;btn.textContent='✓';btn.style.color='var(--green)';btn.style.borderColor='var(--green)';
       setTimeout(()=>{btn.textContent=orig;btn.style.color='';btn.style.borderColor='';},1000);
     });
@@ -3730,7 +3732,7 @@ function renderRecipeList(){
       const ref=getWeightRefSafe();
       if(!w||!ref)return;
       const mtype=card.querySelector('.recipe-meal-type-w').value;
-      addRecipeToMeal(recipe,tK,tP,tC,tF,tR,hM,w/ref,`${w}g`,mtype);
+      addRecipeToMeal(recipe,tK,tP,tC,tF,tR,hM,w/ref,`${w}g`,mtype,w);
       const btn=e.currentTarget;const orig=btn.textContent;btn.textContent='✓';btn.style.color='var(--green)';btn.style.borderColor='var(--green)';
       setTimeout(()=>{btn.textContent=orig;btn.style.color='';btn.style.borderColor='';},1000);
     });
