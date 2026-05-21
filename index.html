@@ -3406,9 +3406,8 @@ document.getElementById('bAddIngPreset').addEventListener('click',()=>{
   const p=selectedIngPreset;
   const inp=document.getElementById('bIngQtyPreset');
   const qty=parseFloat(inp.value);if(!p||!qty||qty<=0)return;
-  const rawG=p.servingG?Math.round(qty*p.servingG*10)/10:qty;
-  const label=p.servingG?`${p.name} (×${qty})`:p.name;
-  builderIngredients.push({name:label,emoji:p.emoji||'',rawG,kcal:p.kcal,p:p.p??null,c:p.c??null,f:p.f??null});
+  const rawG=Math.round(qty*10)/10;
+  builderIngredients.push({name:p.name,emoji:p.emoji||'',rawG,kcal:p.kcal,p:p.p??null,c:p.c??null,f:p.f??null});
   inp.value='';
   clearIngSelection();
   renderBuilderIngredients();
