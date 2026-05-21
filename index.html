@@ -2438,6 +2438,7 @@ function dayTotalKcal(dateKey){
 let mode='raw',cookMode='cooked',activeId=null,lastResult=null,currentServingG=null;
 let presetSearchInput=null,presetDropdown=null;
 let isCreatingNew=false,pendingNewName='',pendingNewEmoji='',pendingIsFixed=false;
+let _membersCache={}; // uid -> {name, initial}
 let viewDateKey=todayKey();
 let activeMealType='breakfast';
 let builderIngredients=[],editingRecipeId=null,bSearchPending=null;
@@ -4003,17 +4004,21 @@ function navigateTo(panel){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   const panelEl=document.getElementById('panel-'+panel);
   if(!panelEl){panel='calc';}
+  // Always show panel first, then run callbacks
   document.getElementById('panel-'+panel).classList.add('active');
   document.querySelectorAll('.nav-item,.bottom-nav-item').forEach(b=>{
     b.classList.toggle('active',b.dataset.nav===panel);
   });
   try{localStorage.setItem('calorieActivePanel',panel);}catch{}
-  try{
-    if(panel==='meals'){renderMealSection();updateGoalBanner();}
-    if(panel==='recipes'){renderRecipeList();populateIngSelect();}
-    if(panel==='profil'){calcProfil();}
-    if(panel==='family'){refreshFamilyUI();}
-  }catch(e){console.error('[nav] Error in panel',panel,e);}
+  // Run panel-specific callbacks asynchronously to avoid blocking panel display
+  setTimeout(()=>{
+    try{
+      if(panel==='meals'){renderMealSection();updateGoalBanner();}
+      else if(panel==='recipes'){renderRecipeList();populateIngSelect();}
+      else if(panel==='profil'){calcProfil();}
+      else if(panel==='family'){refreshFamilyUI();}
+    }catch(e){console.error('[nav] Error in panel',panel,e);}
+  },0);
 }
 document.querySelectorAll('.nav-item,[class*="bottom-nav-item"]').forEach(btn=>{
   btn.addEventListener('click',()=>{
@@ -4416,7 +4421,7 @@ document.getElementById('balanceRecipeBtn').addEventListener('click',()=>{
 
 
 // ── Cache des membres (pour badges "ajouté par")
-let _membersCache = {}; // uid -> {name, initial}
+// _membersCache declared at top of script
 async function loadMembersCache(){
   if(!currentFamilyId || !window.firebase) return;
   const { collection, getDocs } = window.firebase;
