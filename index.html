@@ -1240,17 +1240,19 @@ body{
               <div class="iw"><input type="number" id="fatRef" placeholder="L" min="0" step="0.1" inputmode="decimal"><span class="iu" style="font-size:10px">g L</span></div>
             </div>
           </div>
-          <div class="field">
-            <label>Poids cru de référence</label>
-            <div class="iw"><input type="number" id="rawRef" placeholder="ex. 100" min="0" step="1" inputmode="decimal"><span class="iu">g</span></div>
-          </div>
-          <div class="field">
-            <label>Poids cuit obtenu</label>
-            <div class="iw"><input type="number" id="cookedRef" placeholder="ex. 200" min="0" step="1" inputmode="decimal"><span class="iu">g</span></div>
-          </div>
-          <div class="ratio-bar"><div class="ratio-fill" id="ratioFill" style="width:0%"></div></div>
-          <div class="ratio-text" id="ratioText">—</div>
-          <div class="ratio-warn" id="ratioWarn"></div>
+          <div id="cook-only-fields">
+            <div class="field">
+              <label>Poids cru de référence</label>
+              <div class="iw"><input type="number" id="rawRef" placeholder="ex. 100" min="0" step="1" inputmode="decimal"><span class="iu">g</span></div>
+            </div>
+            <div class="field">
+              <label>Poids cuit obtenu</label>
+              <div class="iw"><input type="number" id="cookedRef" placeholder="ex. 200" min="0" step="1" inputmode="decimal"><span class="iu">g</span></div>
+            </div>
+            <div class="ratio-bar"><div class="ratio-fill" id="ratioFill" style="width:0%"></div></div>
+            <div class="ratio-text" id="ratioText">—</div>
+            <div class="ratio-warn" id="ratioWarn"></div>
+            </div>
         </div>
       </div>
 
@@ -2877,9 +2879,8 @@ document.querySelectorAll('.main-tab').forEach(btn=>{
 // ═══════════════════════════════════════════
 function renderPresets(){
   // Presets now handled by searchable combobox — rebuild dropdown if open
-  if(presetDropdown && presetDropdown.style.display !== 'none'){
+if(presetDropdown && presetDropdown.style.display === 'block'){
     buildPresetDropdown(presetSearchInput ? presetSearchInput.value : '');
-    presetDropdown.style.display='block';
   }
   // also rebuild builder ing select if open
   if(typeof populateIngSelect === 'function') populateIngSelect('');
@@ -2970,7 +2971,7 @@ document.getElementById('createPresetBtn').addEventListener('click',()=>{
 document.querySelectorAll('[data-cook]').forEach(btn=>{
   btn.addEventListener('click',()=>{
     document.querySelectorAll('[data-cook]').forEach(b=>b.classList.remove('active'));btn.classList.add('active');cookMode=btn.dataset.cook;
-    const cf=document.getElementById('cook-fields'),tc=document.getElementById('tabCooked');
+    const cf=document.getElementById('cook-only-fields'),tc=document.getElementById('tabCooked');
     const r2=document.getElementById('r2row'),r4=document.getElementById('r4row');
     if(cookMode==='raw'){cf.style.display='none';tc.disabled=true;if(mode==='cooked'){mode='raw';document.querySelectorAll('[data-mode]').forEach(t=>t.classList.toggle('active',t.dataset.mode==='raw'));}r2.style.display='none';r4.style.display='none';}
     else{cf.style.display='';tc.disabled=false;r2.style.display='';r4.style.display='';}
