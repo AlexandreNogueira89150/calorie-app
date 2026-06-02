@@ -3072,7 +3072,7 @@ document.getElementById('saveCurrentBtn').addEventListener('click',()=>{
     saveCustom(arr);activeId=id;
     isCreatingNew=false;
     const btn=document.getElementById('saveCurrentBtn');
-    btn.textContent='+ Sauvegarder aliment';btn.style.borderColor='';btn.style.color='';
+    btn.textContent='+ Sauvegarder aliment';btn.style.background='';
     document.getElementById('filledKcalTag').innerHTML='';document.getElementById('filledMacroTag').innerHTML='';
     if(presetSelectedDisplay){
       document.getElementById('presetSelectedName').textContent=(pendingNewEmoji||'⭐')+' '+pendingNewName;
@@ -3133,7 +3133,7 @@ document.getElementById('confirmSave').addEventListener('click',()=>{
     document.getElementById('modalAdd').classList.remove('open');
     const btn=document.getElementById('saveCurrentBtn');
     btn.textContent='+ Sauvegarder "'+name+'"';
-    btn.style.borderColor='var(--accent)';btn.style.color='var(--accent)';
+    btn.style.background='var(--green)';
     return;
   }
 
