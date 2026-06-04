@@ -2427,6 +2427,11 @@ const LS_GOAL='calorieGoal';
 const loadCustom=()=>{try{return JSON.parse(localStorage.getItem(LS_CUSTOM)||'[]');}catch{return[];}};
 const saveCustom=a=>{localStorage.setItem(LS_CUSTOM,JSON.stringify(a));syncPushKey('customPresets');};
 const allPresets=()=>[...DEFAULT_PRESETS,...loadCustom().map(p=>({...p,group:p.group||'Mes aliments'}))];
+const findPresetByName=(name)=>{
+  if(!name) return null;
+  const norm=name.trim().toLowerCase();
+  return loadCustom().find(p=>(p.name||'').trim().toLowerCase()===norm)||null;
+};
 const loadRecipes=()=>{try{return JSON.parse(localStorage.getItem(LS_RECIPES)||'[]');}catch{return[];}};
 const saveRecipes=a=>{localStorage.setItem(LS_RECIPES,JSON.stringify(a));syncPushKey('recipes');};
 
@@ -2986,12 +2991,21 @@ async function openScannerModal(){
   try{
     if(!_scannerReader){
       const mod = await import('https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/+esm');
-      _scannerReader = new mod.BrowserMultiFormatReader();
+      const lib = await import('https://cdn.jsdelivr.net/npm/@zxing/library@0.21.0/+esm');
+const hints = new Map();
+hints.set(lib.DecodeHintType.POSSIBLE_FORMATS, [
+  lib.BarcodeFormat.EAN_13,
+  lib.BarcodeFormat.EAN_8,
+  lib.BarcodeFormat.UPC_A,
+  lib.BarcodeFormat.UPC_E
+]);
+hints.set(lib.DecodeHintType.TRY_HARDER, true);
+_scannerReader = new mod.BrowserMultiFormatReader(hints);
     }
     status.textContent = 'Place le code-barres dans le cadre…';
     const video = document.getElementById('scannerVideo');
     _scannerControls = await _scannerReader.decodeFromConstraints(
-      { video: { facingMode: { ideal: 'environment' } } },
+      { video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 }, focusMode: 'continuous' } },
       video,
       (result, err) => {
         if(result){
@@ -3047,6 +3061,16 @@ function saveScannedProduct(p){
     return;
   }
   const fullName = brand ? `${name} — ${brand}` : name;
+  const existing = findPresetByName(fullName);
+  if(existing){
+    activeId = existing.id;
+    selectPreset(existing.id);
+    if(presetSelectedDisplay){
+      document.getElementById('presetSelectedName').textContent = (existing.emoji||'📦') + ' ' + existing.name;
+      presetSelectedDisplay.style.display = 'flex';
+    }
+    return;
+  }
   const id = 'c_' + Date.now();
   const newPreset = {
     id, name: fullName, emoji: '📦',
@@ -3224,6 +3248,15 @@ document.getElementById('saveCurrentBtn').addEventListener('click',()=>{
 document.getElementById('confirmSave').addEventListener('click',()=>{
   const name=document.getElementById('newFoodName').value.trim();
   if(!name){document.getElementById('newFoodName').focus();return;}
+  const dup=findPresetByName(name);
+  if(dup){
+    const info=document.getElementById('modalInfo');
+    info.textContent='⚠ Un aliment nommé "'+dup.name+'" existe déjà. Choisis un autre nom.';
+    info.style.borderLeftColor='var(--red)';
+    document.getElementById('newFoodName').focus();
+    return;
+  }
+  document.getElementById('modalInfo').style.borderLeftColor='';
   const emoji=document.getElementById('newFoodEmoji').value.trim();
 
   if(isCreatingNew){
@@ -4719,6 +4752,12 @@ waitForFirebase(()=>{ setupFamilyHandlers(); });
 const _goFam = document.getElementById('goToFamilyBtn');
 if(_goFam) _goFam.addEventListener('click',()=>navigateTo('family'));
 
+// Préchargement scanner pour éviter délai au 1er scan
+setTimeout(()=>{
+  import('https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/+esm')
+    .then(mod=>{ if(!_scannerReader) _scannerReader = new mod.BrowserMultiFormatReader(); })
+    .catch(()=>{});
+}, 3000);
 
 // ── PWA Service Worker
 if('serviceWorker' in navigator){
