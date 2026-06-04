@@ -2881,6 +2881,7 @@ function renderPresets(){
   // Presets now handled by searchable combobox — rebuild dropdown if open
 if(presetDropdown && presetDropdown.style.display === 'block'){
     buildPresetDropdown(presetSearchInput ? presetSearchInput.value : '');
+    presetDropdown.style.display='block';
   }
   // also rebuild builder ing select if open
   if(typeof populateIngSelect === 'function') populateIngSelect('');
