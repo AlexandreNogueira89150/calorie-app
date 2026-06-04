@@ -2427,10 +2427,40 @@ const LS_GOAL='calorieGoal';
 const loadCustom=()=>{try{return JSON.parse(localStorage.getItem(LS_CUSTOM)||'[]');}catch{return[];}};
 const saveCustom=a=>{localStorage.setItem(LS_CUSTOM,JSON.stringify(a));syncPushKey('customPresets');};
 const allPresets=()=>[...DEFAULT_PRESETS,...loadCustom().map(p=>({...p,group:p.group||'Mes aliments'}))];
-const findPresetByName=(name)=>{
+function openEditPreset(id){
+  const p=loadCustom().find(x=>x.id===id);
+  if(!p)return;
+  editingPresetId=id;
+  isCreatingNew=false;
+  selectPreset(id);
+  document.getElementById('newFoodName').value=p.name||'';
+  document.getElementById('newFoodEmoji').value=p.emoji||'';
+  document.getElementById('modalAddTitle').textContent="Modifier l'aliment";
+  document.getElementById('confirmSave').textContent='Mettre à jour';
+  const info=document.getElementById('modalInfo');
+  info.textContent='';info.style.borderLeftColor='';
+  modalFoodType=p.fixed?'fixed':'per100';
+  document.querySelectorAll('.modal-type-btn').forEach(b=>{
+    const on=b.dataset.ftype===modalFoodType;
+    b.style.background=on?'var(--surface3)':'none';
+    b.style.borderColor=on?'var(--border2)':'transparent';
+    b.style.color=on?'var(--text)':'var(--text-muted)';
+  });
+  document.getElementById('modalFixedFields').style.display=p.fixed?'block':'none';
+  if(p.fixed){
+    document.getElementById('fixedKcal').value=p.fixedKcal??'';
+    document.getElementById('fixedPortionLabel').value=p.fixedLabel||'';
+    document.getElementById('fixedP').value=p.fixedP??'';
+    document.getElementById('fixedC').value=p.fixedC??'';
+    document.getElementById('fixedF').value=p.fixedF??'';
+  }
+  document.getElementById('modalAdd').classList.add('open');
+  setTimeout(()=>document.getElementById('newFoodName').focus(),80);
+}
+const findPresetByName=(name,excludeId)=>{
   if(!name) return null;
   const norm=name.trim().toLowerCase();
-  return loadCustom().find(p=>(p.name||'').trim().toLowerCase()===norm)||null;
+  return loadCustom().find(p=>p.id!==excludeId && (p.name||'').trim().toLowerCase()===norm)||null;
 };
 const loadRecipes=()=>{try{return JSON.parse(localStorage.getItem(LS_RECIPES)||'[]');}catch{return[];}};
 const saveRecipes=a=>{localStorage.setItem(LS_RECIPES,JSON.stringify(a));syncPushKey('recipes');};
@@ -2470,6 +2500,7 @@ function dayTotalKcal(dateKey){
 let mode='raw',cookMode='cooked',activeId=null,lastResult=null,currentServingG=null;
 let presetSearchInput=null,presetDropdown=null;
 let isCreatingNew=false,pendingNewName='',pendingNewEmoji='',pendingIsFixed=false;
+let editingPresetId=null;
 let _membersCache={}; // uid -> {name, initial}
 let viewDateKey=todayKey();
 let activeMealType='breakfast';
@@ -3248,7 +3279,7 @@ document.getElementById('saveCurrentBtn').addEventListener('click',()=>{
 document.getElementById('confirmSave').addEventListener('click',()=>{
   const name=document.getElementById('newFoodName').value.trim();
   if(!name){document.getElementById('newFoodName').focus();return;}
-  const dup=findPresetByName(name);
+  const dup=findPresetByName(name,editingPresetId);
   if(dup){
     const info=document.getElementById('modalInfo');
     info.textContent='⚠ Un aliment nommé "'+dup.name+'" existe déjà. Choisis un autre nom.';
@@ -3258,7 +3289,59 @@ document.getElementById('confirmSave').addEventListener('click',()=>{
   }
   document.getElementById('modalInfo').style.borderLeftColor='';
   const emoji=document.getElementById('newFoodEmoji').value.trim();
-
+// ─── MODE ÉDITION ───
+  if(editingPresetId){
+    const arr=loadCustom();
+    const idx=arr.findIndex(x=>x.id===editingPresetId);
+    if(idx===-1){
+      editingPresetId=null;
+      document.getElementById('confirmSave').textContent='Sauvegarder';
+      document.getElementById('modalAdd').classList.remove('open');
+      return;
+    }
+    const old=arr[idx];
+    let updated;
+    if(modalFoodType==='fixed'){
+      const fk=parseFloat(document.getElementById('fixedKcal').value);
+      if(!fk){document.getElementById('fixedKcal').focus();return;}
+      const fp=parseFloat(document.getElementById('fixedP').value);
+      const fc=parseFloat(document.getElementById('fixedC').value);
+      const ff=parseFloat(document.getElementById('fixedF').value);
+      const flabel=document.getElementById('fixedPortionLabel').value.trim();
+      updated={...old,name,emoji:emoji||old.emoji||'⭐',
+        kcal:null,p:!isNaN(fp)?fp:null,c:!isNaN(fc)?fc:null,f:!isNaN(ff)?ff:null,
+        rawRef:null,cookedRef:null,servingG:null,
+        fixed:true,fixedKcal:fk,fixedLabel:flabel||null,
+        fixedP:!isNaN(fp)?fp:null,fixedC:!isNaN(fc)?fc:null,fixedF:!isNaN(ff)?ff:null};
+    } else {
+      const k=parseFloat(document.getElementById('kcalPer100').value);
+      const r=parseFloat(document.getElementById('rawRef').value);
+      const c=parseFloat(document.getElementById('cookedRef').value);
+      const pp=parseFloat(document.getElementById('protRef').value);
+      const gc=parseFloat(document.getElementById('carbRef').value);
+      const f=parseFloat(document.getElementById('fatRef').value);
+      updated={...old,name,emoji:emoji||old.emoji||'⭐',
+        kcal:!isNaN(k)?k:old.kcal,
+        p:!isNaN(pp)?pp:null,c:!isNaN(gc)?gc:null,f:!isNaN(f)?f:null,
+        rawRef:!isNaN(r)?r:(old.rawRef||100),cookedRef:!isNaN(c)?c:(old.cookedRef||100),
+        servingG:(typeof currentServingG!=='undefined'&&currentServingG)?currentServingG:(old.servingG||null),
+        fixed:false,fixedKcal:null,fixedLabel:null,fixedP:null,fixedC:null,fixedF:null};
+    }
+    arr[idx]=updated;
+    saveCustom(arr);
+    editingPresetId=null;
+    document.getElementById('confirmSave').textContent='Sauvegarder';
+    document.getElementById('modalAdd').classList.remove('open');
+    resetModalType();
+    activeId=updated.id;
+    selectPreset(updated.id);
+    if(presetSelectedDisplay){
+      document.getElementById('presetSelectedName').textContent=(updated.emoji||'⭐')+' '+updated.name;
+      presetSelectedDisplay.style.display='flex';
+    }
+    renderPresets();
+    return;
+  }
   if(isCreatingNew){
     if(modalFoodType==='fixed'){
       // Mode fixe : toutes les données sont dans le modal, on sauvegarde maintenant
@@ -3362,7 +3445,11 @@ function resetModalType(){
     const el=document.getElementById(id); if(el) el.value='';
   });
 }
-document.getElementById('cancelSave').addEventListener('click',()=>document.getElementById('modalAdd').classList.remove('open'));
+document.getElementById('cancelSave').addEventListener('click',()=>{
+  document.getElementById('modalAdd').classList.remove('open');
+  editingPresetId=null;
+  document.getElementById('confirmSave').textContent='Sauvegarder';
+});
 document.getElementById('modalAdd').addEventListener('click',e=>{if(e.target===document.getElementById('modalAdd'))document.getElementById('modalAdd').classList.remove('open');});
 document.getElementById('newFoodName').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('confirmSave').click();});
 
@@ -3968,6 +4055,19 @@ function buildPresetDropdown(filter=''){
       info.textContent=p.fixed?(p.fixedKcal+' kcal/portion'+(p.fixedLabel?' · '+p.fixedLabel:'')):(p.kcal+' kcal/100g'+(p.servingG?' · '+p.servingG+'g':''));
       rightWrap.appendChild(info);
       if(isCustom){
+        const editBtn=document.createElement('button');
+        editBtn.textContent='✎';
+        editBtn.title='Modifier';
+        editBtn.style.cssText='background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:13px;padding:0 2px;line-height:1;transition:color 0.1s;';
+        editBtn.addEventListener('mouseenter',()=>editBtn.style.color='var(--accent)');
+        editBtn.addEventListener('mouseleave',()=>editBtn.style.color='var(--text-dim)');
+        editBtn.addEventListener('mousedown',e=>{
+          e.preventDefault();e.stopPropagation();
+          presetDropdown.style.display='none';
+          presetSearchInput.blur();
+          openEditPreset(p.id);
+        });
+        rightWrap.appendChild(editBtn);
         const delBtn=document.createElement('button');
         delBtn.textContent='×';
         delBtn.title='Supprimer';
