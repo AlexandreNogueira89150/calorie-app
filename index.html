@@ -1214,7 +1214,7 @@ body{
           <div class="search-dropdown" id="presetDropdown"></div>
         </div>
         <div class="selected-pill" id="presetSelectedDisplay">
-          Sélectionné : <span class="selected-pill-name" id="presetSelectedName"></span>
+          <span id="presetSelectedLabel">Sélectionné :</span> <span class="selected-pill-name" id="presetSelectedName"></span>
           <button class="selected-pill-clear" id="presetClearBtn">×</button>
         </div>
       </div>
@@ -3075,6 +3075,7 @@ document.getElementById('saveCurrentBtn').addEventListener('click',()=>{
     btn.textContent='+ Sauvegarder aliment';btn.style.background='';
     document.getElementById('filledKcalTag').innerHTML='';document.getElementById('filledMacroTag').innerHTML='';
     if(presetSelectedDisplay){
+      document.getElementById('presetSelectedLabel').textContent='Sélectionné :';
       document.getElementById('presetSelectedName').textContent=(pendingNewEmoji||'⭐')+' '+pendingNewName;
       presetSelectedDisplay.style.display='flex';
     }
@@ -3134,6 +3135,11 @@ document.getElementById('confirmSave').addEventListener('click',()=>{
     const btn=document.getElementById('saveCurrentBtn');
     btn.textContent='+ Sauvegarder "'+name+'"';
     btn.style.background='var(--green)';
+    if(presetSelectedDisplay){
+      document.getElementById('presetSelectedLabel').textContent='En cours de création :';
+      document.getElementById('presetSelectedName').textContent=(emoji||'⭐')+' '+name;
+      presetSelectedDisplay.style.display='flex';
+    }
     return;
   }
 
@@ -3850,10 +3856,15 @@ presetSearchInput.addEventListener('keydown',e=>{
 document.getElementById('presetClearBtn').addEventListener('click',()=>{
   activeId=null;
   presetSelectedDisplay.style.display='none';
+  document.getElementById('presetSelectedLabel').textContent='Sélectionné :';
   presetSearchInput.value='';
   hidePortionRow();queryValueEl.value='';clearResults();
   lastResult=null;document.getElementById('addMealBtn').disabled=true;
   ['kcalPer100','rawRef','cookedRef','protRef','carbRef','fatRef'].forEach(id=>document.getElementById(id).value='');
+  // Annule aussi la création en cours
+  isCreatingNew=false;pendingNewName='';pendingNewEmoji='';
+  const sBtn=document.getElementById('saveCurrentBtn');
+  sBtn.textContent='+ Sauvegarder aliment';sBtn.style.background='';
   updateRatio();
 });
 // override clearPresetBtn to also reset combobox display
