@@ -1922,6 +1922,31 @@ body{
         </div>
       </div>
     </div>
+    <div id="modalEditMacros" style="display:none;margin-bottom:12px;">
+      <div class="modal-info" style="margin-bottom:10px;">Modifie les valeurs nutritionnelles si besoin.</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div class="field">
+          <label>Kcal / 100g *</label>
+          <div class="iw"><input type="number" id="editKcal" min="0" step="0.1" inputmode="decimal"><span class="iu">kcal</span></div>
+        </div>
+        <div class="field">
+          <label>Portion (g)</label>
+          <div class="iw"><input type="number" id="editServing" min="0" step="1" inputmode="decimal"><span class="iu">g</span></div>
+        </div>
+        <div class="field">
+          <label>Protéines / 100g</label>
+          <div class="iw"><input type="number" id="editP" min="0" step="0.1" inputmode="decimal"><span class="iu">g</span></div>
+        </div>
+        <div class="field">
+          <label>Glucides / 100g</label>
+          <div class="iw"><input type="number" id="editC" min="0" step="0.1" inputmode="decimal"><span class="iu">g</span></div>
+        </div>
+        <div class="field" style="grid-column:1 / span 2;">
+          <label>Lipides / 100g</label>
+          <div class="iw"><input type="number" id="editF" min="0" step="0.1" inputmode="decimal"><span class="iu">g</span></div>
+        </div>
+      </div>
+    </div>
     <div class="modal-info" id="modalInfo"></div>
     <div class="modal-actions">
       <button class="btn-primary" id="confirmSave">Sauvegarder</button>
@@ -2447,6 +2472,14 @@ function openEditPreset(id){
     b.style.color=on?'var(--text)':'var(--text-muted)';
   });
   document.getElementById('modalFixedFields').style.display=p.fixed?'block':'none';
+  document.getElementById('modalEditMacros').style.display=p.fixed?'none':'block';
+  if(!p.fixed){
+    document.getElementById('editKcal').value=p.kcal??'';
+    document.getElementById('editServing').value=p.servingG??'';
+    document.getElementById('editP').value=p.p??'';
+    document.getElementById('editC').value=p.c??'';
+    document.getElementById('editF').value=p.f??'';
+  }
   if(p.fixed){
     document.getElementById('fixedKcal').value=p.fixedKcal??'';
     document.getElementById('fixedPortionLabel').value=p.fixedLabel||'';
@@ -3314,17 +3347,17 @@ document.getElementById('confirmSave').addEventListener('click',()=>{
         fixed:true,fixedKcal:fk,fixedLabel:flabel||null,
         fixedP:!isNaN(fp)?fp:null,fixedC:!isNaN(fc)?fc:null,fixedF:!isNaN(ff)?ff:null};
     } else {
-      const k=parseFloat(document.getElementById('kcalPer100').value);
-      const r=parseFloat(document.getElementById('rawRef').value);
-      const c=parseFloat(document.getElementById('cookedRef').value);
-      const pp=parseFloat(document.getElementById('protRef').value);
-      const gc=parseFloat(document.getElementById('carbRef').value);
-      const f=parseFloat(document.getElementById('fatRef').value);
+      const k=parseFloat(document.getElementById('editKcal').value);
+      if(!k){document.getElementById('editKcal').focus();return;}
+      const pp=parseFloat(document.getElementById('editP').value);
+      const gc=parseFloat(document.getElementById('editC').value);
+      const f=parseFloat(document.getElementById('editF').value);
+      const sg=parseFloat(document.getElementById('editServing').value);
       updated={...old,name,emoji:emoji||old.emoji||'⭐',
-        kcal:!isNaN(k)?k:old.kcal,
+        kcal:k,
         p:!isNaN(pp)?pp:null,c:!isNaN(gc)?gc:null,f:!isNaN(f)?f:null,
-        rawRef:!isNaN(r)?r:(old.rawRef||100),cookedRef:!isNaN(c)?c:(old.cookedRef||100),
-        servingG:(typeof currentServingG!=='undefined'&&currentServingG)?currentServingG:(old.servingG||null),
+        rawRef:old.rawRef||100,cookedRef:old.cookedRef||100,
+        servingG:!isNaN(sg)&&sg>0?sg:null,
         fixed:false,fixedKcal:null,fixedLabel:null,fixedP:null,fixedC:null,fixedF:null};
     }
     arr[idx]=updated;
@@ -3332,6 +3365,7 @@ document.getElementById('confirmSave').addEventListener('click',()=>{
     editingPresetId=null;
     document.getElementById('confirmSave').textContent='Sauvegarder';
     document.getElementById('modalAdd').classList.remove('open');
+    document.getElementById('modalEditMacros').style.display='none';
     resetModalType();
     activeId=updated.id;
     selectPreset(updated.id);
@@ -3449,6 +3483,7 @@ document.getElementById('cancelSave').addEventListener('click',()=>{
   document.getElementById('modalAdd').classList.remove('open');
   editingPresetId=null;
   document.getElementById('confirmSave').textContent='Sauvegarder';
+  document.getElementById('modalEditMacros').style.display='none';
 });
 document.getElementById('modalAdd').addEventListener('click',e=>{if(e.target===document.getElementById('modalAdd'))document.getElementById('modalAdd').classList.remove('open');});
 document.getElementById('newFoodName').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('confirmSave').click();});
