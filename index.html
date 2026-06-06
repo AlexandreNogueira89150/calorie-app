@@ -2503,7 +2503,7 @@ const LS_GOAL='calorieGoal';
 
 const loadCustom=()=>{try{return JSON.parse(localStorage.getItem(LS_CUSTOM)||'[]');}catch{return[];}};
 const saveCustom=a=>{localStorage.setItem(LS_CUSTOM,JSON.stringify(a));syncPushKey('customPresets');};
-const allPresets=()=>[...DEFAULT_PRESETS,...loadCustom().map(p=>({...p,group:p.group||'Mes aliments'}))];
+const allPresets=()=>[...DEFAULT_PRESETS,...loadCustom().map(p=>({...p,group:p.group||'Mes aliments'})),...ciqualPresets];
 function openEditPreset(id){
   const p=loadCustom().find(x=>x.id===id);
   if(!p)return;
@@ -2585,6 +2585,23 @@ function dayTotalKcal(dateKey){
 let mode='raw',cookMode='cooked',activeId=null,lastResult=null,currentServingG=null;
 let presetSearchInput=null,presetDropdown=null;
 let isCreatingNew=false,pendingNewName='',pendingNewEmoji='',pendingIsFixed=false;
+let ciqualPresets=[];
+let _ciqualLoading=false;
+async function loadCiqual(){
+  if(ciqualPresets.length||_ciqualLoading)return;
+  _ciqualLoading=true;
+  try{
+    const res=await fetch('ciqual.json');
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const data=await res.json();
+    ciqualPresets=data.i.map(r=>({
+      id:'q_'+r[0],name:r[1],group:'CIQUAL — '+r[2],emoji:'',
+      kcal:r[3],p:r[4],c:r[5],f:r[6],
+      rawRef:100,cookedRef:100,servingG:null
+    }));
+  }catch(e){console.error('CIQUAL load failed:',e);}
+  finally{_ciqualLoading=false;}
+}
 let editingPresetId=null;
 let _membersCache={}; // uid -> {name, initial}
 let viewDateKey=todayKey();
@@ -4189,7 +4206,109 @@ function buildPresetDropdown(filter=''){
   });
 }
 
-presetSearchInput.addEventListener('focus',()=>{buildPresetDropdown(presetSearchInput.value);presetDropdown.style.display='block';});
+function buildPresetDropdown(filter=''){
+  presetDropdown.innerHTML='';
+  const q=filter.trim().toLowerCase();
+  const customIds=new Set(loadCustom().map(c=>c.id));
+  const sources=q?allPresets():[...DEFAULT_PRESETS,...loadCustom().map(p=>({...p,group:p.group||'Mes aliments'}))];
+  const MAX=80;
+  const scored=[];
+  for(const p of sources){
+    const n=(p.name||'').toLowerCase();
+    const e=(p.emoji||'').toLowerCase();
+    const g=(p.group||'').toLowerCase();
+    if(q){
+      if(!n.includes(q)&&!e.includes(q)&&!g.includes(q))continue;
+      let s=5;
+      if(n===q)s=0;
+      else if(n.startsWith(q))s=1;
+      else if(n.split(/[\s,()-]+/).some(w=>w===q))s=2;
+      else if(n.split(/[\s,()-]+/).some(w=>w.startsWith(q)))s=3;
+      else if(n.includes(q))s=4;
+      scored.push({p,s});
+    } else {
+      scored.push({p,s:5});
+    }
+  }
+  scored.sort((a,b)=>a.s-b.s);
+  const truncated=scored.length>MAX;
+  const shown=scored.slice(0,MAX);
+  const groups={};
+  shown.forEach(({p})=>{const g=p.group||'Divers';if(!groups[g])groups[g]=[];groups[g].push(p);});
+  if(!shown.length){
+    presetDropdown.innerHTML='<div style="padding:10px 14px;font-size:11px;color:var(--text-dim);">Aucun résultat</div>';
+    return;
+  }
+  Object.entries(groups).forEach(([gName,items])=>{
+    const grp=document.createElement('div');
+    grp.style.cssText='font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-dim);padding:6px 14px 3px;background:var(--surface2);';
+    grp.textContent=gName;presetDropdown.appendChild(grp);
+    items.forEach(p=>{
+      const isCustom=customIds.has(p.id);
+      const opt=document.createElement('div');
+      opt.style.cssText='padding:7px 14px;font-size:13px;color:var(--text-muted);transition:all 0.1s;display:flex;justify-content:space-between;align-items:center;gap:8px;';
+      const left=document.createElement('span');
+      left.style.cssText='flex:1;cursor:pointer;';
+      left.textContent=(p.emoji?p.emoji+' ':'')+p.name;
+      const rightWrap=document.createElement('span');
+      rightWrap.style.cssText='display:flex;align-items:center;gap:6px;flex:none;';
+      const info=document.createElement('span');
+      info.style.cssText='font-size:10px;color:var(--text-dim);';
+      info.textContent=p.fixed?(p.fixedKcal+' kcal/portion'+(p.fixedLabel?' · '+p.fixedLabel:'')):(p.kcal+' kcal/100g'+(p.servingG?' · '+p.servingG+'g':''));
+      rightWrap.appendChild(info);
+      if(isCustom){
+        const editBtn=document.createElement('button');
+        editBtn.textContent='✎';editBtn.title='Modifier';
+        editBtn.style.cssText='background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:13px;padding:0 2px;line-height:1;transition:color 0.1s;';
+        editBtn.addEventListener('mouseenter',()=>editBtn.style.color='var(--accent)');
+        editBtn.addEventListener('mouseleave',()=>editBtn.style.color='var(--text-dim)');
+        editBtn.addEventListener('mousedown',e=>{
+          e.preventDefault();e.stopPropagation();
+          presetDropdown.style.display='none';presetSearchInput.blur();
+          openEditPreset(p.id);
+        });
+        rightWrap.appendChild(editBtn);
+        const delBtn=document.createElement('button');
+        delBtn.textContent='×';delBtn.title='Supprimer';
+        delBtn.style.cssText='background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:14px;padding:0 2px;line-height:1;transition:color 0.1s;';
+        delBtn.addEventListener('mouseenter',()=>delBtn.style.color='var(--red)');
+        delBtn.addEventListener('mouseleave',()=>delBtn.style.color='var(--text-dim)');
+        delBtn.addEventListener('mousedown',e=>{
+          e.preventDefault();e.stopPropagation();
+          if(!confirm('Supprimer "'+p.name+'" ?'))return;
+          deleteCustom(p.id);
+          buildPresetDropdown(presetSearchInput.value);
+        });
+        rightWrap.appendChild(delBtn);
+      }
+      opt.appendChild(left);opt.appendChild(rightWrap);
+      opt.addEventListener('mouseenter',()=>opt.style.background='var(--surface2)');
+      opt.addEventListener('mouseleave',()=>opt.style.background='');
+      const handleSelect=(e)=>{
+        if(e){e.preventDefault();e.stopPropagation();}
+        selectPreset(p.id);
+        presetSearchInput.value='';presetSearchInput.blur();
+        presetDropdown.innerHTML='';presetDropdown.style.display='none';
+        presetSelectedName.textContent=(p.emoji?p.emoji+' ':'')+p.name;
+        presetSelectedDisplay.style.display='flex';
+      };
+      left.addEventListener('mousedown',handleSelect);
+      left.addEventListener('touchstart',handleSelect,{passive:false});
+      presetDropdown.appendChild(opt);
+    });
+  });
+  if(truncated){
+    const more=document.createElement('div');
+    more.style.cssText='padding:8px 14px;font-size:11px;color:var(--text-dim);font-style:italic;text-align:center;';
+    more.textContent='Plus de résultats — affine la recherche';
+    presetDropdown.appendChild(more);
+  }
+}
+presetSearchInput.addEventListener('focus',()=>{
+  loadCiqual().then(()=>{if(presetDropdown.style.display==='block')buildPresetDropdown(presetSearchInput.value);});
+  buildPresetDropdown(presetSearchInput.value);
+  presetDropdown.style.display='block';
+});
 presetSearchInput.addEventListener('input',()=>{buildPresetDropdown(presetSearchInput.value);presetDropdown.style.display='block';});
 presetSearchInput.addEventListener('blur',()=>{setTimeout(()=>{presetDropdown.style.display='none';},150);});
 presetSearchInput.addEventListener('keydown',e=>{
