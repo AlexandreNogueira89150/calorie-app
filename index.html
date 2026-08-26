@@ -656,6 +656,36 @@ body{
 .goal-remaining-val.neutral{color:var(--text-muted);}
 .goal-bar-wrap{height:8px;background:var(--surface2);border-radius:99px;overflow:hidden;}
 .goal-bar{height:100%;border-radius:99px;transition:width 0.4s,background 0.4s;}
+.goal-macro-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:8px;
+  margin-top:10px;
+}
+.goal-macro{
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  padding:9px 10px;
+}
+.goal-macro-head{display:flex;align-items:center;justify-content:space-between;gap:6px;}
+.goal-macro-value{font-size:15px;font-weight:700;white-space:nowrap;}
+.goal-macro-sub{font-size:11px;color:var(--text-muted);margin-top:5px;white-space:nowrap;}
+.goal-macro-sub.ok{color:var(--green);}
+.goal-macro-sub.over{color:var(--red);}
+.weekly-deficit{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-top:10px;
+  padding-top:10px;
+  border-top:1px solid var(--border);
+}
+.weekly-deficit-val{font-size:16px;font-weight:700;}
+.weekly-deficit-val.ok{color:var(--green);}
+.weekly-deficit-val.over{color:var(--red);}
+.weekly-deficit-val.neutral{color:var(--text-muted);}
 
 /* ── BOTTOM ACTIONS (calc tab) ── */
 .bottom-actions{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:8px;}
@@ -1080,6 +1110,7 @@ body{
 }
 @media(max-width:767px){
   .mobile-user-badge{display:flex;}
+  .goal-macro-grid{grid-template-columns:1fr;}
 }
 .mobile-user-badge .user-avatar{width:28px;height:28px;font-size:12px;}
 </style>
@@ -1403,6 +1434,33 @@ body{
     </div>
     <div class="goal-bar-wrap">
       <div class="goal-bar" id="goalBar" style="width:0%;background:var(--green);"></div>
+    </div>
+    <div class="goal-macro-grid">
+      <div class="goal-macro">
+        <div class="goal-macro-head">
+          <span class="goal-lbl">Protéines</span>
+          <span class="goal-macro-value pv" id="goalProteinConsumed">0g</span>
+        </div>
+        <div class="goal-macro-sub" id="goalProteinRemaining">Objectif —</div>
+      </div>
+      <div class="goal-macro">
+        <div class="goal-macro-head">
+          <span class="goal-lbl">Glucides</span>
+          <span class="goal-macro-value cv" id="goalCarbConsumed">0g</span>
+        </div>
+        <div class="goal-macro-sub" id="goalCarbRemaining">Objectif —</div>
+      </div>
+      <div class="goal-macro">
+        <div class="goal-macro-head">
+          <span class="goal-lbl">Lipides</span>
+          <span class="goal-macro-value fv" id="goalFatConsumed">0g</span>
+        </div>
+        <div class="goal-macro-sub" id="goalFatRemaining">Objectif —</div>
+      </div>
+    </div>
+    <div class="weekly-deficit">
+      <span class="goal-lbl">Déficit semaine</span>
+      <span class="weekly-deficit-val neutral" id="weeklyDeficit">—</span>
     </div>
   </div>
 
@@ -2578,6 +2636,39 @@ function dayTotalKcal(dateKey){
   const d=getDayData(dateKey);
   return MEAL_TYPES.reduce((sum,t)=>sum+d[t].reduce((s,i)=>s+i.kcal,0),0);
 }
+function dayTotals(dateKey){
+  const d=getDayData(dateKey);
+  return MEAL_TYPES.reduce((totals,t)=>{
+    d[t].forEach(i=>{
+      totals.kcal += Number(i.kcal)||0;
+      totals.p += Number(i.p)||0;
+      totals.c += Number(i.c)||0;
+      totals.f += Number(i.f)||0;
+    });
+    return totals;
+  },{kcal:0,p:0,c:0,f:0});
+}
+function macroGoalsFromKcal(goal){
+  if(!goal)return {p:0,c:0,f:0};
+  return {
+    p:Math.round((goal*0.30)/4),
+    c:Math.round((goal*0.40)/4),
+    f:Math.round((goal*0.30)/9)
+  };
+}
+function weekBounds(dateKey){
+  const start=new Date(dateKey+'T12:00:00');
+  const day=start.getDay()||7;
+  start.setDate(start.getDate()-day+1);
+  const end=new Date(start);
+  end.setDate(start.getDate()+6);
+  const today=new Date(todayKey()+'T12:00:00');
+  if(end>today)end.setTime(today.getTime());
+  return {start,end};
+}
+function formatDateKey(d){
+  return d.toISOString().slice(0,10);
+}
 
 // ═══════════════════════════════════════════
 // STATE
@@ -2635,12 +2726,13 @@ goalInput.addEventListener('input',()=>{
 });
 function updateGoalBanner(){
   const goal=parseFloat(goalInput.value)||0;
-  const consumed=MEAL_TYPES.reduce((s,t)=>{
-    return s+getDayData(viewDateKey)[t].reduce((a,i)=>a+i.kcal,0);
-  },0);
+  const totals=dayTotals(viewDateKey);
+  const consumed=totals.kcal;
   document.getElementById('goalConsumed').innerHTML=`${Math.round(consumed)} <span>kcal</span>`;
   const rem=document.getElementById('goalRemaining');
   const bar=document.getElementById('goalBar');
+  updateMacroGoalBanner(totals,goal);
+  updateWeeklyDeficit(goal);
   if(!goal){rem.textContent='—';rem.className='goal-remaining-val neutral';bar.style.width='0%';bar.style.background='var(--accent)';return;}
   const left=goal-consumed;
   const pct=Math.min(100,(consumed/goal)*100);
@@ -2653,6 +2745,50 @@ function updateGoalBanner(){
     rem.textContent=`+${Math.round(-left)} kcal`;
     rem.className='goal-remaining-val over';
     bar.style.background='var(--red)';
+  }
+}
+function updateMacroGoalBanner(totals,goal){
+  const goals=macroGoalsFromKcal(goal);
+  [
+    {key:'p',consumedId:'goalProteinConsumed',remainingId:'goalProteinRemaining'},
+    {key:'c',consumedId:'goalCarbConsumed',remainingId:'goalCarbRemaining'},
+    {key:'f',consumedId:'goalFatConsumed',remainingId:'goalFatRemaining'}
+  ].forEach(m=>{
+    document.getElementById(m.consumedId).textContent=fmt(totals[m.key])+'g';
+    const el=document.getElementById(m.remainingId);
+    if(!goals[m.key]){
+      el.textContent='Objectif —';
+      el.className='goal-macro-sub';
+      return;
+    }
+    const left=goals[m.key]-totals[m.key];
+    if(left>=0){
+      el.textContent=`${fmt(left)}g restants / ${goals[m.key]}g`;
+      el.className='goal-macro-sub ok';
+    }else{
+      el.textContent=`+${fmt(-left)}g / ${goals[m.key]}g`;
+      el.className='goal-macro-sub over';
+    }
+  });
+}
+function updateWeeklyDeficit(goal){
+  const el=document.getElementById('weeklyDeficit');
+  if(!goal){
+    el.textContent='—';
+    el.className='weekly-deficit-val neutral';
+    return;
+  }
+  const {start,end}=weekBounds(viewDateKey);
+  let delta=0;
+  for(const d=new Date(start);d<=end;d.setDate(d.getDate()+1)){
+    delta += goal-dayTotals(formatDateKey(d)).kcal;
+  }
+  if(delta>=0){
+    el.textContent=`${Math.round(delta)} kcal`;
+    el.className='weekly-deficit-val ok';
+  }else{
+    el.textContent=`+${Math.round(-delta)} kcal`;
+    el.className='weekly-deficit-val over';
   }
 }
 
