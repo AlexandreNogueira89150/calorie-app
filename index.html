@@ -654,25 +654,22 @@ body{
 .goal-remaining-val.ok{color:var(--green);}
 .goal-remaining-val.over{color:var(--red);}
 .goal-remaining-val.neutral{color:var(--text-muted);}
-.goal-bar-wrap{height:8px;background:var(--surface2);border-radius:99px;overflow:hidden;}
+.goal-bar-wrap{height:8px;background:var(--surface2);border-radius:99px;overflow:hidden;margin-top:8px;}
 .goal-bar{height:100%;border-radius:99px;transition:width 0.4s,background 0.4s;}
-.goal-macro-grid{
+.goal-nutrient-grid{
   display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:8px;
+  grid-template-columns:repeat(2,1fr);
+  gap:10px;
   margin-top:10px;
 }
-.goal-macro{
+.goal-nutrient{
   background:var(--surface2);
   border:1px solid var(--border);
   border-radius:var(--radius-sm);
-  padding:9px 10px;
+  padding:10px;
 }
-.goal-macro-head{display:flex;align-items:center;justify-content:space-between;gap:6px;}
-.goal-macro-value{font-size:15px;font-weight:700;white-space:nowrap;}
-.goal-macro-sub{font-size:11px;color:var(--text-muted);margin-top:5px;white-space:nowrap;}
-.goal-macro-sub.ok{color:var(--green);}
-.goal-macro-sub.over{color:var(--red);}
+.goal-nutrient-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;}
+.goal-nutrient .goal-remaining-val{font-size:12px;}
 .weekly-deficit{
   display:flex;
   align-items:center;
@@ -1110,7 +1107,7 @@ body{
 }
 @media(max-width:767px){
   .mobile-user-badge{display:flex;}
-  .goal-macro-grid{grid-template-columns:1fr;}
+  .goal-nutrient-grid{grid-template-columns:1fr;}
 }
 .mobile-user-badge .user-avatar{width:28px;height:28px;font-size:12px;}
 </style>
@@ -1415,7 +1412,7 @@ body{
     <div class="page-subtitle">Suivi journalier · Historique</div>
   </div>
 
-  <!-- Objectif calorie (compact) -->
+   <!-- Objectifs journaliers -->
   <div class="goal-card">
     <div class="goal-row">
       <div class="goal-section">
@@ -1423,41 +1420,46 @@ body{
         <input type="number" class="goal-input" id="goalInput" placeholder="2000" min="0" step="50" inputmode="decimal">
         <span style="font-size:11px;color:var(--text-dim);">kcal/jour</span>
       </div>
-      <div class="goal-section" style="margin-left:auto;">
-        <span class="goal-lbl">Consommé</span>
-        <span class="goal-stat kv" id="goalConsumed">0 kcal</span>
-      </div>
-      <div class="goal-section">
-        <span class="goal-lbl">Restant</span>
-        <span class="goal-remaining-val neutral" id="goalRemaining">—</span>
-      </div>
     </div>
-    <div class="goal-bar-wrap">
-      <div class="goal-bar" id="goalBar" style="width:0%;background:var(--green);"></div>
-    </div>
-    <div class="goal-macro-grid">
-      <div class="goal-macro">
-        <div class="goal-macro-head">
+
+    <div class="goal-nutrient-grid">
+      <div class="goal-nutrient">
+        <div class="goal-nutrient-head">
+          <span class="goal-lbl">Calories</span>
+          <span class="goal-stat kv" id="calorieConsumed">0 kcal</span>
+        </div>
+        <div class="goal-remaining-val neutral" id="calorieRemaining">—</div>
+        <div class="goal-bar-wrap"><div class="goal-bar" id="calorieBar" style="width:0%;background:var(--green);"></div></div>
+      </div>
+
+      <div class="goal-nutrient">
+        <div class="goal-nutrient-head">
           <span class="goal-lbl">Protéines</span>
-          <span class="goal-macro-value pv" id="goalProteinConsumed">0g</span>
+          <span class="goal-stat pv" id="proteinConsumed">0 g</span>
         </div>
-        <div class="goal-macro-sub" id="goalProteinRemaining">Objectif —</div>
+        <div class="goal-remaining-val neutral" id="proteinRemaining">Objectif —</div>
+        <div class="goal-bar-wrap"><div class="goal-bar" id="proteinBar" style="width:0%;background:var(--blue);"></div></div>
       </div>
-      <div class="goal-macro">
-        <div class="goal-macro-head">
+
+      <div class="goal-nutrient">
+        <div class="goal-nutrient-head">
           <span class="goal-lbl">Glucides</span>
-          <span class="goal-macro-value cv" id="goalCarbConsumed">0g</span>
+          <span class="goal-stat cv" id="carbConsumed">0 g</span>
         </div>
-        <div class="goal-macro-sub" id="goalCarbRemaining">Objectif —</div>
+        <div class="goal-remaining-val neutral" id="carbRemaining">Objectif —</div>
+        <div class="goal-bar-wrap"><div class="goal-bar" id="carbBar" style="width:0%;background:var(--orange);"></div></div>
       </div>
-      <div class="goal-macro">
-        <div class="goal-macro-head">
+
+      <div class="goal-nutrient">
+        <div class="goal-nutrient-head">
           <span class="goal-lbl">Lipides</span>
-          <span class="goal-macro-value fv" id="goalFatConsumed">0g</span>
+          <span class="goal-stat fv" id="fatConsumed">0 g</span>
         </div>
-        <div class="goal-macro-sub" id="goalFatRemaining">Objectif —</div>
+        <div class="goal-remaining-val neutral" id="fatRemaining">Objectif —</div>
+        <div class="goal-bar-wrap"><div class="goal-bar" id="fatBar" style="width:0%;background:var(--green);"></div></div>
       </div>
     </div>
+
     <div class="weekly-deficit">
       <span class="goal-lbl">Déficit semaine</span>
       <span class="weekly-deficit-val neutral" id="weeklyDeficit">—</span>
@@ -2727,50 +2729,46 @@ goalInput.addEventListener('input',()=>{
 function updateGoalBanner(){
   const goal=parseFloat(goalInput.value)||0;
   const totals=dayTotals(viewDateKey);
-  const consumed=totals.kcal;
-  document.getElementById('goalConsumed').innerHTML=`${Math.round(consumed)} <span>kcal</span>`;
-  const rem=document.getElementById('goalRemaining');
-  const bar=document.getElementById('goalBar');
-  updateMacroGoalBanner(totals,goal);
+  const macroGoals=macroGoalsFromKcal(goal);
+
+  updateGoalNutrient('calorie',totals.kcal,goal,'kcal',0);
+  updateGoalNutrient('protein',totals.p,macroGoals.p,'g',1);
+  updateGoalNutrient('carb',totals.c,macroGoals.c,'g',1);
+  updateGoalNutrient('fat',totals.f,macroGoals.f,'g',1);
   updateWeeklyDeficit(goal);
-  if(!goal){rem.textContent='—';rem.className='goal-remaining-val neutral';bar.style.width='0%';bar.style.background='var(--accent)';return;}
-  const left=goal-consumed;
-  const pct=Math.min(100,(consumed/goal)*100);
-  bar.style.width=pct+'%';
+}
+
+function updateGoalNutrient(prefix,consumed,target,unit,decimals){
+  const consumedEl=document.getElementById(prefix+'Consumed');
+  const remainingEl=document.getElementById(prefix+'Remaining');
+  const barEl=document.getElementById(prefix+'Bar');
+  if(!consumedEl||!remainingEl||!barEl)return;
+
+  consumedEl.innerHTML=`${fmt(consumed,decimals)} <span>${unit}</span>`;
+
+  if(!target){
+    remainingEl.textContent='Objectif —';
+    remainingEl.className='goal-remaining-val neutral';
+    barEl.style.width='0%';
+    barEl.style.background='var(--accent)';
+    return;
+  }
+
+  const left=target-consumed;
+  const pct=Math.min(100,(consumed/target)*100);
+  barEl.style.width=pct+'%';
+
   if(left>=0){
-    rem.textContent=`${Math.round(left)} kcal`;
-    rem.className='goal-remaining-val ok';
-    bar.style.background=pct>90?'var(--orange)':'var(--green)';
+    remainingEl.textContent=`${fmt(left,decimals)} ${unit} restants`;
+    remainingEl.className='goal-remaining-val ok';
+    barEl.style.background=pct>90?'var(--orange)':'var(--green)';
   }else{
-    rem.textContent=`+${Math.round(-left)} kcal`;
-    rem.className='goal-remaining-val over';
-    bar.style.background='var(--red)';
+    remainingEl.textContent=`+${fmt(-left,decimals)} ${unit}`;
+    remainingEl.className='goal-remaining-val over';
+    barEl.style.background='var(--red)';
   }
 }
-function updateMacroGoalBanner(totals,goal){
-  const goals=macroGoalsFromKcal(goal);
-  [
-    {key:'p',consumedId:'goalProteinConsumed',remainingId:'goalProteinRemaining'},
-    {key:'c',consumedId:'goalCarbConsumed',remainingId:'goalCarbRemaining'},
-    {key:'f',consumedId:'goalFatConsumed',remainingId:'goalFatRemaining'}
-  ].forEach(m=>{
-    document.getElementById(m.consumedId).textContent=fmt(totals[m.key])+'g';
-    const el=document.getElementById(m.remainingId);
-    if(!goals[m.key]){
-      el.textContent='Objectif —';
-      el.className='goal-macro-sub';
-      return;
-    }
-    const left=goals[m.key]-totals[m.key];
-    if(left>=0){
-      el.textContent=`${fmt(left)}g restants / ${goals[m.key]}g`;
-      el.className='goal-macro-sub ok';
-    }else{
-      el.textContent=`+${fmt(-left)}g / ${goals[m.key]}g`;
-      el.className='goal-macro-sub over';
-    }
-  });
-}
+
 function updateWeeklyDeficit(goal){
   const el=document.getElementById('weeklyDeficit');
   if(!goal){
@@ -2868,17 +2866,16 @@ function renderMealSection(){
 
   const table=document.createElement('table');
   table.className='meal-table';
-  table.innerHTML=`<thead><tr>
+    table.innerHTML=`<thead><tr>
     <th>Aliment</th>
     <th style="text-align:center">Qté</th>
     <th class="kv">Kcal</th>
-    <th class="pv" style="display:none" id="mh-p">P</th>
-    <th class="cv" style="display:none" id="mh-c">G</th>
-    <th class="fv" style="display:none" id="mh-f">L</th>
+    <th class="pv">P</th>
+    <th class="cv">G</th>
+    <th class="fv">L</th>
     <th></th>
   </tr></thead>`;
   const tbody=document.createElement('tbody');
-  const hasMacroAny=items.some(i=>i.p!=null);
 
   items.forEach((item,idx)=>{
     const tr=document.createElement('tr');tr.className='fade-in';
@@ -2934,10 +2931,11 @@ function renderMealSection(){
       qtyTd.appendChild(qtyIn);qtyTd.appendChild(unitSpan);
     }
 
-    // kcal
-    const kcalTd=document.createElement('td');kcalTd.className='kv';kcalTd.textContent=fmt(item.kcal,0);
+        const kcalTd=document.createElement('td');kcalTd.className='kv';kcalTd.textContent=fmt(item.kcal,0);
+    const pTd=document.createElement('td');pTd.className='pv';pTd.textContent=item.p!=null?fmt(item.p):'—';
+    const cTd=document.createElement('td');cTd.className='cv';cTd.textContent=item.c!=null?fmt(item.c):'—';
+    const fTd=document.createElement('td');fTd.className='fv';fTd.textContent=item.f!=null?fmt(item.f):'—';
 
-    // del
     const delTd=document.createElement('td');
     const delBtn=document.createElement('button');delBtn.className='del-row';delBtn.textContent='×';
     delBtn.addEventListener('click',()=>{
@@ -2946,16 +2944,25 @@ function renderMealSection(){
     });
     delTd.appendChild(delBtn);
 
-    tr.appendChild(nameTd);tr.appendChild(qtyTd);tr.appendChild(kcalTd);tr.appendChild(delTd);
+    tr.appendChild(nameTd);tr.appendChild(qtyTd);tr.appendChild(kcalTd);tr.appendChild(pTd);tr.appendChild(cTd);tr.appendChild(fTd);tr.appendChild(delTd);
     tbody.appendChild(tr);
   });
 
-  // totals row
-  const tK=items.reduce((a,i)=>a+i.kcal,0);
-  const tR=items.reduce((a,i)=>a+(i.fixed?0:i.rawG),0);
+  const tK=items.reduce((a,i)=>a+(Number(i.kcal)||0),0);
+  const tP=items.reduce((a,i)=>a+(Number(i.p)||0),0);
+  const tC=items.reduce((a,i)=>a+(Number(i.c)||0),0);
+  const tF=items.reduce((a,i)=>a+(Number(i.f)||0),0);
+  const tR=items.reduce((a,i)=>a+(i.fixed?0:(Number(i.rawG)||0)),0);
   const tRStr=tR>0?fmt(tR,0)+'g':'—';
   const tfootTr=document.createElement('tr');tfootTr.className='meal-totals-row';
-  tfootTr.innerHTML=`<td>Total</td><td style="text-align:center">${tRStr}</td><td class="kv">${fmt(tK,0)}</td><td></td>`;
+  tfootTr.innerHTML=`
+    <td>Total</td>
+    <td style="text-align:center">${tRStr}</td>
+    <td class="kv">${fmt(tK,0)}</td>
+    <td class="pv">${fmt(tP)}</td>
+    <td class="cv">${fmt(tC)}</td>
+    <td class="fv">${fmt(tF)}</td>
+    <td></td>`;
 
   const tfoot=document.createElement('tfoot');tfoot.appendChild(tfootTr);
   table.appendChild(tbody);table.appendChild(tfoot);
