@@ -717,6 +717,20 @@ body{
 .error-msg{font-size:12px;color:var(--red);padding:8px 0 0;min-height:20px;font-weight:500;}
 
 /* ── RECIPES ── */
+.recipe-cat-filter{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;}
+.recipe-cat-btn{
+  padding:6px 12px;
+  font-family:'Inter',sans-serif;
+  font-size:12px;font-weight:500;
+  color:var(--text-muted);
+  background:var(--surface2);
+  border:1.5px solid var(--border);
+  border-radius:99px;
+  cursor:pointer;transition:all 0.15s;
+  white-space:nowrap;
+}
+.recipe-cat-btn:hover{border-color:var(--border2);color:var(--text);}
+.recipe-cat-btn.active{background:var(--accent-light);border-color:var(--accent);color:var(--accent);font-weight:600;}
 .recipe-card{
   background:var(--surface);border:1.5px solid var(--border);
   border-radius:var(--radius);box-shadow:var(--shadow);
@@ -1518,6 +1532,16 @@ body{
       </div>
     </div>
 
+    <div class="field" style="margin-bottom:14px;">
+      <label>Catégorie</label>
+      <div class="recipe-cat-filter" id="bCategorySelect">
+        <button type="button" class="recipe-cat-btn" data-cat="breakfast">🌅 Petit-déj</button>
+        <button type="button" class="recipe-cat-btn active" data-cat="meal">🍽 Repas</button>
+        <button type="button" class="recipe-cat-btn" data-cat="dessert">🍰 Dessert</button>
+        <button type="button" class="recipe-cat-btn" data-cat="snack">🍎 Collation</button>
+      </div>
+    </div>
+
     <div class="card-title">Ingrédients <span id="bIngCount" style="color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0"></span></div>
     <div class="builder-ingredients-list" id="builderIngredientsList">
       <div class="empty-state" id="bIngEmpty" style="padding:16px;">
@@ -1633,11 +1657,22 @@ body{
     </div>
   </div>
 
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input type="text" class="search-input" id="recipeSearchInput" placeholder="Rechercher une recette…" autocomplete="off">
+  </div>
+  <div class="recipe-cat-filter" id="recipeCatFilter">
+    <button class="recipe-cat-btn active" data-rcat="all">Toutes</button>
+    <button class="recipe-cat-btn" data-rcat="breakfast">🌅 Petit-déj</button>
+    <button class="recipe-cat-btn" data-rcat="meal">🍽 Repas</button>
+    <button class="recipe-cat-btn" data-rcat="dessert">🍰 Dessert</button>
+    <button class="recipe-cat-btn" data-rcat="snack">🍎 Collation</button>
+  </div>
+
   <div id="recipeList"></div>
   <div id="recipesEmpty" style="display:none;">
-    <div class="empty-state"><div class="empty-state-icon">📋</div>Aucune recette sauvegardée</div>
-  </div>
-</div><!-- /panel-recipes -->
+    <div class="empty-state"><div class="empty-state-icon">📋</div><span id="recipesEmptyMsg">Aucune recette sauvegardée</span></div>
+  </div><!-- /panel-recipes -->
 
 <!-- ═══════════ PANEL: OBJECTIF ═══════════ -->
 <div class="panel" id="panel-profil">
@@ -2702,6 +2737,8 @@ let _membersCache={}; // uid -> {name, initial}
 let viewDateKey=todayKey();
 let activeMealType='breakfast';
 let builderIngredients=[],editingRecipeId=null,bSearchPending=null;
+let builderCategory='meal',recipeSearchQuery='',recipeCategoryFilter='all';
+const RECIPE_CAT_LABELS={breakfast:'🌅 Petit-déj',meal:'🍽 Repas',dessert:'🍰 Dessert',snack:'🍎 Collation'};
 
 // ═══════════════════════════════════════════
 // HELPERS
@@ -4002,17 +4039,26 @@ function openBuilder(recipeId){
   });
   document.getElementById('ing-panel-grams').style.display='flex';
   document.getElementById('ing-panel-portions').style.display='none';
+  document.querySelectorAll('#bCategorySelect .recipe-cat-btn').forEach(b=>{
+    b.classList.toggle('active',b.dataset.cat===builderCategory);
+  });
   document.getElementById('recipeBuilder').scrollIntoView({behavior:'smooth'});
   setTimeout(()=>document.getElementById('bName').focus(),80);
 }
+document.querySelectorAll('#bCategorySelect .recipe-cat-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    builderCategory=btn.dataset.cat;
+    document.querySelectorAll('#bCategorySelect .recipe-cat-btn').forEach(b=>b.classList.toggle('active',b===btn));
+  });
+});
 document.getElementById('newRecipeBtn').addEventListener('click',()=>{
   const builder=document.getElementById('recipeBuilder');
   if(builder.classList.contains('open')&&!editingRecipeId){builder.classList.remove('open');return;}
-  editingRecipeId=null;builderIngredients=[];
+  editingRecipeId=null;builderIngredients=[];builderCategory='meal';
   document.getElementById('bName').value='';document.getElementById('bEmoji').value='';
   openBuilder(null);
 });
-document.getElementById('bCancelBtn').addEventListener('click',()=>{document.getElementById('recipeBuilder').classList.remove('open');builderIngredients=[];editingRecipeId=null;});
+document.getElementById('bCancelBtn').addEventListener('click',()=>{document.getElementById('recipeBuilder').classList.remove('open');builderIngredients=[];editingRecipeId=null;builderCategory='meal';});
 document.getElementById('bSaveBtn').addEventListener('click',()=>{
   try{
     const name=document.getElementById('bName').value.trim();if(!name){document.getElementById('bName').focus();return;}
@@ -4020,7 +4066,8 @@ document.getElementById('bSaveBtn').addEventListener('click',()=>{
     const emoji=document.getElementById('bEmoji').value.trim()||'🍲',id=editingRecipeId||('r_'+Date.now());
     const existing=loadRecipes().find(r=>r.id===id);
     const recipes=loadRecipes().filter(r=>r.id!==id);
-    const newRecipe={id,name,emoji,
+        const newRecipe={id,name,emoji,
+      category:builderCategory,
       ingredients:JSON.parse(JSON.stringify(builderIngredients)),
       servings:existing?existing.servings:1,
       cookedWeight:existing?existing.cookedWeight:null,
@@ -4076,16 +4123,30 @@ function calcTotals(ings){
 }
 
 function renderRecipeList(){
-  const list=document.getElementById('recipeList'),empty=document.getElementById('recipesEmpty'),recipes=loadRecipes();
+  const list=document.getElementById('recipeList'),empty=document.getElementById('recipesEmpty'),allRecipes=loadRecipes();
   list.innerHTML='';
-  if(!recipes.length){empty.style.display='';return;}empty.style.display='none';
+  if(!allRecipes.length){
+    document.getElementById('recipesEmptyMsg').textContent='Aucune recette sauvegardée';
+    empty.style.display='';return;
+  }
+  const q=recipeSearchQuery.toLowerCase().trim();
+  const recipes=allRecipes.filter(r=>{
+    if(recipeCategoryFilter!=='all'&&(r.category||'meal')!==recipeCategoryFilter)return false;
+    if(q&&!r.name.toLowerCase().includes(q))return false;
+    return true;
+  });
+  if(!recipes.length){
+    document.getElementById('recipesEmptyMsg').textContent='Aucune recette pour ce filtre';
+    empty.style.display='';return;
+  }
+  empty.style.display='none';
   recipes.forEach(recipe=>{
     const{tK,tP,tC,tF,tR,hM}=calcTotals(recipe.ingredients);
     const card=document.createElement('div');card.className='recipe-card fade-in';card.dataset.rid=recipe.id;
     card.innerHTML=`
       <div class="recipe-header">
         <div class="recipe-title-wrap"><span class="recipe-emoji">${recipe.emoji}</span>
-          <div><div class="recipe-name">${recipe.name}${typeof memberBadge==="function"?memberBadge(recipe.addedBy):""}</div><div class="recipe-meta">${recipe.ingredients.length} ing · ${fmt(tR,0)}g</div><div class="recipe-ing-preview">${recipe.ingredients.map(ing=>(ing.emoji||'')+' '+ing.name.replace(/ \(.*\)$/,'')).join(' · ')}</div></div>
+                    <div><div class="recipe-name">${recipe.name}${typeof memberBadge==="function"?memberBadge(recipe.addedBy):""}</div><div class="recipe-meta">${RECIPE_CAT_LABELS[recipe.category||'meal']} · ${recipe.ingredients.length} ing · ${fmt(tR,0)}g</div><div class="recipe-ing-preview">${recipe.ingredients.map(ing=>(ing.emoji||'')+' '+ing.name.replace(/ \(.*\)$/,'')).join(' · ')}</div></div>
         </div>
         <div class="recipe-badges"><span class="badge badge-kcal">${fmt(tK,0)} kcal</span>
           <div class="badge-actions">
@@ -4242,12 +4303,13 @@ function renderRecipeList(){
     card.querySelector('.edit-r').addEventListener('click',e=>{
       e.stopPropagation();editingRecipeId=recipe.id;
       builderIngredients=JSON.parse(JSON.stringify(recipe.ingredients));
+      builderCategory=recipe.category||'meal';
       document.getElementById('bName').value=recipe.name;document.getElementById('bEmoji').value=recipe.emoji;
       openBuilder(recipe.id);
     });
     card.querySelector('.dup-r').addEventListener('click',e=>{
       e.stopPropagation();const newId='r_'+Date.now();const recipes=loadRecipes();
-      recipes.push({id:newId,name:recipe.name+' (copie)',emoji:recipe.emoji,ingredients:JSON.parse(JSON.stringify(recipe.ingredients)),servings:recipe.servings||1,cookedWeight:recipe.cookedWeight||null,createdAt:new Date().toISOString()});
+      recipes.push({id:newId,name:recipe.name+' (copie)',emoji:recipe.emoji,category:recipe.category||'meal',ingredients:JSON.parse(JSON.stringify(recipe.ingredients)),servings:recipe.servings||1,cookedWeight:recipe.cookedWeight||null,createdAt:new Date().toISOString()});
       saveRecipes(recipes);renderRecipeList();
     });
     card.querySelector('.del').addEventListener('click',e=>{
@@ -4258,6 +4320,18 @@ function renderRecipeList(){
     list.appendChild(card);
   });
 }
+
+document.getElementById('recipeSearchInput').addEventListener('input',e=>{
+  recipeSearchQuery=e.target.value;
+  renderRecipeList();
+});
+document.querySelectorAll('#recipeCatFilter .recipe-cat-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    recipeCategoryFilter=btn.dataset.rcat;
+    document.querySelectorAll('#recipeCatFilter .recipe-cat-btn').forEach(b=>b.classList.toggle('active',b===btn));
+    renderRecipeList();
+  });
+});
 
 // ═══════════════════════════════════════════
 // INIT
