@@ -2926,7 +2926,8 @@ function renderMealSection(){
 
     // name cell
     const nameTd=document.createElement('td');
-    const subLabel = isFixed ? (item.fixedLabel||'portion') : (item.noCook?'':'cru');
+    const qtyMode = item.qtyMode || 'raw';
+    const subLabel = isFixed ? (item.fixedLabel||'portion') : qtyMode==='cooked' ? 'cuit' : qtyMode==='kcal' ? 'kcal visées' : (item.noCook?'':'cru');
     nameTd.innerHTML=`<div class="meal-name-cell"><span class="meal-emoji">${item.emoji||''}</span><div><div class="meal-item-name">${item.name}</div><div class="meal-sub">${subLabel}</div></div></div>`;
 
     // qty cell — inline editable
@@ -2953,20 +2954,31 @@ function renderMealSection(){
       unitSpan.textContent=ul.length>6?'×':ul;
       unitSpan.style.cssText='font-size:9px;color:var(--text-dim);margin-left:3px;';
       qtyTd.appendChild(qtyIn);qtyTd.appendChild(unitSpan);
-    } else {
-      qtyIn.value=item.rawG;
+        } else {
+      // Champ affiché/édité = mode utilisé à l'ajout (poids cru / poids cuit / kcal visées)
+      const kpg100 = item.kcalPer100!=null ? item.kcalPer100/100 : kcalPerUnit;
+      let displayVal,unitLabel;
+      if(qtyMode==='cooked'&&item.cookedG!=null){displayVal=item.cookedG;unitLabel='g';}
+      else if(qtyMode==='kcal'){displayVal=item.kcal;unitLabel='kcal';}
+      else{displayVal=item.rawG;unitLabel='g';}
+      qtyIn.value=unitLabel==='kcal'?Math.round(displayVal):Math.round(displayVal*10)/10;
       qtyIn.addEventListener('change',()=>{
         const v=parseFloat(qtyIn.value);if(!v||v<=0)return;
         const d=getDayData(viewDateKey);
         const it=d[activeMealType][idx];
-        it.rawG=v;
-        it.kcal=Math.round(v*kcalPerUnit*10)/10;
-        if(item.p!=null) it.p=Math.round(item.p/item.rawG*v*100)/100;
-        if(item.c!=null) it.c=Math.round(item.c/item.rawG*v*100)/100;
-        if(item.f!=null) it.f=Math.round(item.f/item.rawG*v*100)/100;
+        let newRawG;
+        if(qtyMode==='cooked'&&item.ratio){newRawG=v/item.ratio;}
+        else if(qtyMode==='kcal'){newRawG=kpg100>0?v/kpg100:item.rawG;}
+        else{newRawG=v;}
+        it.rawG=Math.round(newRawG*10)/10;
+        it.kcal=qtyMode==='kcal'?Math.round(v*10)/10:Math.round(newRawG*kpg100*10)/10;
+        if(item.ratio) it.cookedG=Math.round(newRawG*item.ratio*10)/10;
+        if(item.p!=null) it.p=Math.round(item.p/item.rawG*newRawG*100)/100;
+        if(item.c!=null) it.c=Math.round(item.c/item.rawG*newRawG*100)/100;
+        if(item.f!=null) it.f=Math.round(item.f/item.rawG*newRawG*100)/100;
         setDayData(viewDateKey,d);renderMealSection();updateGoalBanner();
       });
-      const unitSpan=document.createElement('span');unitSpan.textContent='g';unitSpan.style.cssText='font-size:9px;color:var(--text-dim);margin-left:3px;';
+      const unitSpan=document.createElement('span');unitSpan.textContent=unitLabel;unitSpan.style.cssText='font-size:9px;color:var(--text-dim);margin-left:3px;';
       qtyTd.appendChild(qtyIn);qtyTd.appendChild(unitSpan);
     }
 
@@ -3495,12 +3507,12 @@ function calculate(){
   const pRef=parseFloat(document.getElementById('protRef').value),cRef=parseFloat(document.getElementById('carbRef').value),fRef=parseFloat(document.getElementById('fatRef').value);
   if(!k||!q||q<=0){clearResults();lastResult=null;document.getElementById('addMealBtn').disabled=true;return;}
   const kpg=k/100,hasMacro=!isNaN(pRef)&&!isNaN(cRef)&&!isNaN(fRef);
-  let rawG,cookedG,totalK;
+  let rawG,cookedG,totalK,ratio=null;
   if(cookMode==='raw'){rawG=q;cookedG=null;if(mode==='kcal'){totalK=q;rawG=q/kpg;}else totalK=rawG*kpg;}
   else{
     const rr=parseFloat(document.getElementById('rawRef').value),cr=parseFloat(document.getElementById('cookedRef').value);
     if(!rr||!cr){clearResults();lastResult=null;document.getElementById('addMealBtn').disabled=true;return;}
-    const ratio=cr/rr;
+    ratio=cr/rr;
     if(mode==='raw'){rawG=q;cookedG=rawG*ratio;totalK=rawG*kpg;}
     else if(mode==='cooked'){cookedG=q;rawG=cookedG/ratio;totalK=rawG*kpg;}
     else{totalK=q;rawG=q/kpg;cookedG=rawG*ratio;}
@@ -3518,7 +3530,7 @@ function calculate(){
   else{mpEl.textContent='—';mpEl.className='macro-val';mcEl.textContent='—';mcEl.className='macro-val';mfEl.textContent='—';mfEl.className='macro-val';}
   ['r1value','r2value','r3value','r4value'].forEach(popEl);
   const preset=allPresets().find(x=>x.id===activeId);
-  lastResult={name:preset?preset.name:(document.getElementById('newFoodName').value||'Aliment'),emoji:preset?preset.emoji:'',rawG,cookedG,kcal:totalK,p:totP,c:totC,f:totF,noCook:cookMode==='raw'};
+  lastResult={name:preset?preset.name:(document.getElementById('newFoodName').value||'Aliment'),emoji:preset?preset.emoji:'',rawG,cookedG,kcal:totalK,p:totP,c:totC,f:totF,noCook:cookMode==='raw',qtyMode:mode,kcalPer100:k,ratio};
   document.getElementById('addMealBtn').disabled=false;
 }
 
