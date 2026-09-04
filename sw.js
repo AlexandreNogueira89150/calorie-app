@@ -1,4 +1,5 @@
 const CACHE = 'calories-v2';
+
 const ASSETS = [
   './',
   './index.html',
@@ -14,29 +15,44 @@ self.addEventListener('install', e => {
       .then(cache => cache.addAll(ASSETS))
       .catch(() => {})
   );
-  self.skipWaiting();
+
+  // On laisse le nouveau SW attendre :
+  // l'application affichera un popup à l'utilisateur.
 });
 
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+      Promise.all(
+        keys
+          .filter(k => k !== CACHE)
+          .map(k => caches.delete(k))
+      )
     )
   );
+
   self.clients.claim();
+});
+
+// Message envoyé par index.html quand l'utilisateur clique
+// sur "Mettre à jour".
+self.addEventListener('message', e => {
+  if (e.data?.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
 
-  // Toujours chercher la dernière version de l'application
-  // sur le réseau pour les fichiers HTML/JS/CSS.
   const isAppFile =
     e.request.destination === 'document' ||
     e.request.destination === 'script' ||
     e.request.destination === 'style';
 
   if (isAppFile) {
+    // Pour l'application : réseau en priorité.
+    // Cela évite de rester bloqué sur une vieille version.
     e.respondWith(
       fetch(e.request)
         .then(response => {
@@ -50,25 +66,13 @@ self.addEventListener('fetch', e => {
         })
         .catch(() => caches.match(e.request))
     );
+
     return;
   }
 
-  // Pour les autres ressources : cache d'abord.
+  // Pour les autres ressources : cache en priorité.
   e.respondWith(
-    caches.match(e.request).then(cached => {
-      if (cached) return cached;
-
-      return fetch(e.request)
-        .then(response => {
-          if (response.ok) {
-            const clone = response.clone();
-            caches.open(CACHE).then(cache => {
-              cache.put(e.request, clone);
-            });
-          }
-          return response;
-        })
-        .catch(() => cached || new Response('Offline', { status: 503 }));
-    })
+    caches.match(e.request)
+      .then(cached => cached || fetch(e.request))
   );
 });
