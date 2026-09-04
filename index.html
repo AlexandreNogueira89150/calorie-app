@@ -1328,8 +1328,8 @@ body{
           <button class="portion-close" id="portionClose">×</button>
         </div>
 
-        <!-- Grammes / Portions toggle -->
-        <div class="toggle-group cols-2" style="margin-bottom:12px;">
+                <!-- Grammes / Portions toggle -->
+        <div class="toggle-group cols-2" id="calcQtyModeGroup" style="margin-bottom:12px;">
           <button class="calc-qty-mode-btn toggle-btn active" data-qmode="grams">⚖ Par grammes</button>
           <button class="calc-qty-mode-btn toggle-btn" data-qmode="portions">🍽 Par portions</button>
         </div>
@@ -3477,6 +3477,19 @@ function updateCalcTabLabels(){
   document.getElementById('queryLabel').textContent=cookMode==='raw'?'Poids souhaité':cfg.label;
   document.getElementById('queryUnit').textContent=cfg.unit;
   if(!currentServingG)queryValueEl.placeholder=cfg.ph;
+  const qtyGroup=document.getElementById('calcQtyModeGroup');
+  const portionsBtn=document.querySelector('.calc-qty-mode-btn[data-qmode="portions"]');
+  const gramsBtn=document.querySelector('.calc-qty-mode-btn[data-qmode="grams"]');
+  if(mode==='kcal'){
+    portionsBtn.style.display='none';
+    qtyGroup.style.gridTemplateColumns='1fr';
+    gramsBtn.textContent='⚖ Par calories';
+    if(calcQtyMode==='portions')gramsBtn.click();
+  }else{
+    portionsBtn.style.display='';
+    qtyGroup.style.gridTemplateColumns='1fr 1fr';
+    gramsBtn.textContent='⚖ Par grammes';
+  }
 }
 document.querySelectorAll('[data-mode]').forEach(btn=>{
   btn.addEventListener('click',()=>{
