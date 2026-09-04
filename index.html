@@ -3823,7 +3823,10 @@ function buildIngDropdown(filter=''){
         selectIngPreset(p);
       };
       opt.addEventListener('mousedown', handleSelect);
-      opt.addEventListener('touchstart', handleSelect, {passive:false});
+      let touchStartY=0,touchMoved=false;
+      opt.addEventListener('touchstart',e=>{touchStartY=e.touches[0].clientY;touchMoved=false;},{passive:true});
+      opt.addEventListener('touchmove',e=>{if(Math.abs(e.touches[0].clientY-touchStartY)>8)touchMoved=true;},{passive:true});
+      opt.addEventListener('touchend',e=>{if(!touchMoved)handleSelect(e);},{passive:false});
       ingDropdown.appendChild(opt);
     });
   });
@@ -4419,7 +4422,10 @@ function buildPresetDropdown(filter=''){
         presetSelectedDisplay.style.display='flex';
       };
       left.addEventListener('mousedown', handleSelect);
-      left.addEventListener('touchstart', handleSelect, {passive:false});
+      let touchStartY=0,touchMoved=false;
+      left.addEventListener('touchstart',e=>{touchStartY=e.touches[0].clientY;touchMoved=false;},{passive:true});
+      left.addEventListener('touchmove',e=>{if(Math.abs(e.touches[0].clientY-touchStartY)>8)touchMoved=true;},{passive:true});
+      left.addEventListener('touchend',e=>{if(!touchMoved)handleSelect(e);},{passive:false});
       presetDropdown.appendChild(opt);
     });
   });
