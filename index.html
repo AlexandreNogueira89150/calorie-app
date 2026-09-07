@@ -3142,6 +3142,7 @@ async function pushMealsHistoryNow(){
 
 async function acceptShareRequest(req){
   if(!req || req.toUid!==activeUserId()) return;
+  let added=false;
   try{
     const d=getDayData(req.dateKey);
     const targetType=req.mealType||activeMealType;
@@ -3155,17 +3156,23 @@ async function acceptShareRequest(req){
       });
     });
     setDayData(req.dateKey,d);
-    await pushMealsHistoryNow();
-    await updateShareRequestStatus(req,'accepted');
+    added=true;
     viewDateKey=req.dateKey;
     updateDateNav();
     activeMealType=targetType;
     document.querySelectorAll('.meal-type-tab').forEach(b=>b.classList.toggle('active',b.dataset.mtype===targetType));
     renderMealSection();
     updateGoalBanner();
+    try{
+      await updateShareRequestStatus(req,'accepted');
+      refreshShareInbox();
+    }catch(e){
+      console.error('[share] accept status',e);
+      alert('Aliment ajouté, mais impossible de clôturer la demande : '+(e.code||e.message||'erreur inconnue'));
+    }
   }catch(e){
     console.error('[share] accept',e);
-    alert('Impossible d\'accepter cette demande.');
+    alert((added?'Aliment ajouté, mais erreur après ajout : ':'Impossible d\'accepter cette demande : ')+(e.code||e.message||'erreur inconnue'));
   }
 }
 
