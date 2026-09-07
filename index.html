@@ -1672,7 +1672,8 @@ body{
   <div id="recipeList"></div>
   <div id="recipesEmpty" style="display:none;">
     <div class="empty-state"><div class="empty-state-icon">📋</div><span id="recipesEmptyMsg">Aucune recette sauvegardée</span></div>
-  </div><!-- /panel-recipes -->
+  </div>
+</div><!-- /panel-recipes -->
 
 <!-- ═══════════ PANEL: OBJECTIF ═══════════ -->
 <div class="panel" id="panel-profil">
@@ -1804,6 +1805,19 @@ body{
     <div id="familyMembersList" style="display:flex;flex-direction:column;gap:8px;">
       <div style="font-size:12px;color:var(--text-dim);">Chargement…</div>
     </div>
+  </div>
+
+  <!-- Admin -->
+  <div class="card" id="familyAdminCard" style="display:none;">
+    <div class="card-title">Mode administrateur</div>
+    <div style="display:flex;gap:8px;align-items:flex-end;">
+      <div class="field" style="flex:1;margin-bottom:0;">
+        <label>Compte actif</label>
+        <select class="itxt" id="familyAdminMemberSelect" style="font-size:13px;cursor:pointer;"></select>
+      </div>
+      <button class="btn-accent" id="familyAdminSwitchBtn">Ouvrir</button>
+    </div>
+    <div id="familyAdminStatus" style="font-size:12px;color:var(--text-muted);margin-top:8px;min-height:18px;"></div>
   </div>
 
   <!-- Inviter -->
@@ -2096,6 +2110,13 @@ const FS_PERSONAL = {
 // settings (goal) is personal, handled separately
 
 let currentFamilyId = null;
+let activePersonalUserId = null;
+let isFamilyOwner = false;
+let familyMembers = [];
+
+function activeUserId(){
+  return activePersonalUserId || (currentUser && currentUser.uid);
+}
 
 // ── Family bootstrap: get or create family for current user
 async function ensureFamily(){
@@ -2164,15 +2185,15 @@ function sharedDocRef(key){
   const { doc, db } = window.firebase;
   return doc(db, 'families', currentFamilyId, 'shared', key);
 }
-function personalDocRef(key){
-  if(!currentFamilyId || !currentUser || !window.firebase) return null;
+function personalDocRef(key,userId=activeUserId()){
+  if(!currentFamilyId || !currentUser || !userId || !window.firebase) return null;
   const { doc, db } = window.firebase;
   // path: families/{fid}/personal/{userId}/items/{key} — matches rule personal/{userId}/{doc=**}
-  return doc(db, 'families', currentFamilyId, 'personal', currentUser.uid, 'items', key);
+  return doc(db, 'families', currentFamilyId, 'personal', userId, 'items', key);
 }
 
 // ── Pull all data
-async function syncPullAll(){
+async function syncPullAll(userId=activeUserId(), options={}){
   if(!currentFamilyId || !window.firebase){return;}
   const { getDoc } = window.firebase;
   console.log('[sync] Pull from Firestore…');
@@ -2187,34 +2208,73 @@ async function syncPullAll(){
     }
     // Personal
     for(const [key, meta] of Object.entries(FS_PERSONAL)){
-      const snap = await getDoc(personalDocRef(key));
+      const snap = await getDoc(personalDocRef(key,userId));
       if(snap.exists()){
         const data = snap.data();
         localStorage.setItem(meta.lsKey, JSON.stringify(data[meta.field] || meta.defaultVal));
+      }else{
+        localStorage.setItem(meta.lsKey, JSON.stringify(meta.defaultVal));
       }
     }
     // Settings (goal) — personal
-    const sSnap = await getDoc(personalDocRef('settings'));
+    const sSnap = await getDoc(personalDocRef('settings',userId));
     if(sSnap.exists() && sSnap.data().goal != null){
       localStorage.setItem('calorieGoal', String(sSnap.data().goal));
+    }else{
+      localStorage.removeItem('calorieGoal');
     }
     console.log('[sync] Pull terminé');
   }catch(e){
     console.error('[sync] Pull error:', e);
+    if(options.throwErrors) throw e;
   }
+}
+
+function refreshPersonalUIFromStorage(){
+  const p = (()=>{try{return JSON.parse(localStorage.getItem('calorieProfilV1')||'{}');}catch{return{};}})();
+  const profilSexe=document.getElementById('profilSexe');
+  const profilAge=document.getElementById('profilAge');
+  const profilPoids=document.getElementById('profilPoids');
+  const profilTaille=document.getElementById('profilTaille');
+  const profilActivite=document.getElementById('profilActivite');
+  if(profilSexe) profilSexe.value=p.sexe||'h';
+  if(profilAge) profilAge.value=p.age||'';
+  if(profilPoids) profilPoids.value=p.poids||'';
+  if(profilTaille) profilTaille.value=p.taille||'';
+  if(profilActivite) profilActivite.value=p.activite||'1.55';
+  document.querySelectorAll('.profil-obj-btn').forEach(b=>b.classList.toggle('active',b.dataset.obj===(p.objectif||'maintain')));
+
+  const goalEl=document.getElementById('goalInput');
+  if(goalEl) goalEl.value=localStorage.getItem('calorieGoal')||'';
+
+  if(typeof calcProfil === 'function') calcProfil();
+  if(typeof updateDateNav === 'function') updateDateNav();
+  if(typeof renderMealSection === 'function') renderMealSection();
+  if(typeof updateGoalBanner === 'function') updateGoalBanner();
+  if(typeof updateNavBadges === 'function') updateNavBadges();
+}
+
+async function switchPersonalContext(userId){
+  if(!currentUser || !currentFamilyId || !userId || userId===activeUserId()) return;
+  const wasSyncEnabled = _syncEnabled;
+  _syncEnabled = false;
+  await syncPullAll(userId,{throwErrors:true});
+  activePersonalUserId = userId;
+  _syncEnabled = wasSyncEnabled;
+  refreshPersonalUIFromStorage();
 }
 
 // ── Push (debounced)
 function syncPush(key, payload){
   if(!_syncEnabled || !currentFamilyId) return;
   if(_saveTimers[key]) clearTimeout(_saveTimers[key]);
+  let ref;
+  if(FS_SHARED[key]) ref = sharedDocRef(key);
+  else ref = personalDocRef(key); // personal data + settings
+  if(!ref) return;
   _saveTimers[key] = setTimeout(async()=>{
     try{
       const { setDoc } = window.firebase;
-      let ref;
-      if(FS_SHARED[key]) ref = sharedDocRef(key);
-      else ref = personalDocRef(key); // personal data + settings
-      if(!ref) return;
       await setDoc(ref, payload, { merge: true });
       console.log('[sync] Push:', key);
     }catch(e){
@@ -2262,6 +2322,9 @@ async function syncMigrateLocalToFirestore(){
 // ── On login: bootstrap family, pull, migrate if needed, refresh UI
 async function onLoginPullAndRefresh(){
   _syncEnabled = false;
+  activePersonalUserId = currentUser ? currentUser.uid : null;
+  isFamilyOwner = false;
+  familyMembers = [];
   try{
     await ensureFamily();
   }catch(e){
@@ -2302,18 +2365,7 @@ async function onLoginPullAndRefresh(){
     if(g) document.getElementById('goalInput').value = g;
     updateGoalBanner();
   }
-  if(typeof calcProfil === 'function'){
-    const p = (()=>{try{return JSON.parse(localStorage.getItem('calorieProfilV1')||'{}');}catch{return{};}})();
-    if(p.sexe) document.getElementById('profilSexe').value=p.sexe;
-    if(p.age)  document.getElementById('profilAge').value=p.age;
-    if(p.poids) document.getElementById('profilPoids').value=p.poids;
-    if(p.taille) document.getElementById('profilTaille').value=p.taille;
-    if(p.activite) document.getElementById('profilActivite').value=p.activite;
-    if(p.objectif){
-      document.querySelectorAll('.profil-obj-btn').forEach(b=>b.classList.toggle('active',b.dataset.obj===p.objectif));
-    }
-    calcProfil();
-  }
+  refreshPersonalUIFromStorage();
   // Update family UI if present
   if(typeof refreshFamilyUI === 'function') refreshFamilyUI();
   console.log('[sync] Prêt — famille', currentFamilyId)
@@ -2387,6 +2439,10 @@ window._onAuthChange = function(user){
     updateUserBadge(null);
     _syncEnabled = false;
     _syncReady = false;
+    currentFamilyId = null;
+    activePersonalUserId = null;
+    isFamilyOwner = false;
+    familyMembers = [];
   }
 };
 
@@ -4793,17 +4849,7 @@ function loadProfil(){try{return JSON.parse(localStorage.getItem(LS_PROFIL)||'{}
 function saveProfil(p){localStorage.setItem(LS_PROFIL,JSON.stringify(p));syncPushKey('profil');}
 
 // Restore saved profil on load
-(function(){
-  const p=loadProfil();
-  if(p.sexe) document.getElementById('profilSexe').value=p.sexe;
-  if(p.age)  document.getElementById('profilAge').value=p.age;
-  if(p.poids) document.getElementById('profilPoids').value=p.poids;
-  if(p.taille) document.getElementById('profilTaille').value=p.taille;
-  if(p.activite) document.getElementById('profilActivite').value=p.activite;
-  if(p.objectif){
-    document.querySelectorAll('.profil-obj-btn').forEach(b=>b.classList.toggle('active',b.dataset.obj===p.objectif));
-  }
-})();
+refreshPersonalUIFromStorage();
 
 // Objectif toggle
 document.querySelectorAll('.profil-obj-btn').forEach(btn=>{
@@ -5193,9 +5239,12 @@ async function refreshFamilyUI(){
   const db = window.firebase.db;
   try{
     // Family meta
+    let ownerId = null;
     const famSnap = await getDoc(doc(db,'families',currentFamilyId));
     if(famSnap.exists()){
       const fam = famSnap.data();
+      ownerId = fam.ownerId || null;
+      isFamilyOwner = ownerId === currentUser.uid;
       document.getElementById('familyInviteCode').textContent = fam.inviteCode || '------';
       document.getElementById('familyNameInput').value = fam.name || '';
     }
@@ -5204,26 +5253,72 @@ async function refreshFamilyUI(){
     const list = document.getElementById('familyMembersList');
     list.innerHTML = '';
     let count = 0;
+    familyMembers = [];
     membersSnap.forEach(m=>{
       count++;
       const data = m.data();
       const isMe = m.id === currentUser.uid;
+      const isActive = m.id === activeUserId();
+      const isOwner = m.id === ownerId;
+      familyMembers.push({id:m.id, ...data});
       const initial = (data.name||'?')[0].toUpperCase();
       const row = document.createElement('div');
       row.style.cssText='display:flex;align-items:center;gap:10px;padding:8px;background:var(--surface2);border-radius:var(--radius-sm);';
       row.innerHTML=`
         <div class="user-avatar" style="width:34px;height:34px;">${initial}</div>
         <div style="flex:1;min-width:0;">
-          <div style="font-size:13px;font-weight:600;color:var(--text);">${data.name||'Membre'}${isMe?' <span style=\"font-size:10px;color:var(--accent);font-weight:500;\">(toi)</span>':''}</div>
+          <div style="font-size:13px;font-weight:600;color:var(--text);">${data.name||'Membre'}${isMe?' <span style=\"font-size:10px;color:var(--accent);font-weight:500;\">(toi)</span>':''}${isOwner?' <span style=\"font-size:10px;color:var(--blue);font-weight:500;\">admin</span>':''}${isActive?' <span style=\"font-size:10px;color:var(--green);font-weight:500;\">actif</span>':''}</div>
           <div style="font-size:11px;color:var(--text-dim);">${data.email||(data.isAnonymous?'Compte anonyme':'')}</div>
         </div>`;
       list.appendChild(row);
     });
     document.getElementById('familyMemberCount').textContent = '('+count+')';
+    renderFamilyAdminControls();
   }catch(e){console.error('[family] refreshUI',e);}
 }
 
+function renderFamilyAdminControls(){
+  const card=document.getElementById('familyAdminCard');
+  const select=document.getElementById('familyAdminMemberSelect');
+  const status=document.getElementById('familyAdminStatus');
+  if(!card||!select||!status) return;
+  const canAdmin = isFamilyOwner && familyMembers.length > 0;
+  card.style.display = canAdmin ? '' : 'none';
+  if(!canAdmin) return;
+  select.innerHTML='';
+  familyMembers.forEach(m=>{
+    const opt=document.createElement('option');
+    opt.value=m.id;
+    opt.textContent=(m.name||m.email||'Membre')+(m.id===currentUser.uid?' (toi)':'');
+    select.appendChild(opt);
+  });
+  select.value=activeUserId()||currentUser.uid;
+  const active=familyMembers.find(m=>m.id===activeUserId());
+  status.textContent='Compte actif : '+(active?.name||active?.email||'Membre');
+}
+
 function setupFamilyHandlers(){
+  document.getElementById('familyAdminSwitchBtn').addEventListener('click', async()=>{
+    if(!isFamilyOwner){return;}
+    const select=document.getElementById('familyAdminMemberSelect');
+    const status=document.getElementById('familyAdminStatus');
+    const userId=select.value;
+    if(!userId || userId===activeUserId()) return;
+    status.style.color='var(--text-muted)';
+    status.innerHTML='<span class="spinner"></span>Chargement…';
+    try{
+      await switchPersonalContext(userId);
+      await refreshFamilyUI();
+      const active=familyMembers.find(m=>m.id===activeUserId());
+      status.style.color='var(--green)';
+      status.textContent='Compte actif : '+(active?.name||active?.email||'Membre');
+    }catch(e){
+      console.error('[family] admin switch',e);
+      status.style.color='var(--red)';
+      status.textContent='Accès refusé ou données indisponibles.';
+    }
+  });
+
   // Copy invite code
   document.getElementById('copyInviteCodeBtn').addEventListener('click',()=>{
     const code = document.getElementById('familyInviteCode').textContent;
@@ -5299,6 +5394,8 @@ async function joinFamilyByCode(){
 
     // Push my current personal data to the new family (shared data stays in old family)
     currentFamilyId = targetId;
+    activePersonalUserId = currentUser.uid;
+    isFamilyOwner = false;
     _syncEnabled = true;
     // Re-pull from new family
     await syncPullAll();
@@ -5308,7 +5405,7 @@ async function joinFamilyByCode(){
 
     // Refresh everything
     if(typeof renderPresets==='function') renderPresets();
-    if(typeof renderMealSection==='function') renderMealSection();
+    refreshPersonalUIFromStorage();
     if(typeof renderRecipeList==='function') renderRecipeList();
     refreshFamilyUI();
   }catch(e){
