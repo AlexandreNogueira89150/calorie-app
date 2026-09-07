@@ -2601,6 +2601,14 @@ const LS_GOAL='calorieGoal';
 const loadCustom=()=>{try{return JSON.parse(localStorage.getItem(LS_CUSTOM)||'[]');}catch{return[];}};
 const saveCustom=a=>{localStorage.setItem(LS_CUSTOM,JSON.stringify(a));syncPushKey('customPresets');};
 const allPresets=()=>[...DEFAULT_PRESETS,...loadCustom().map(p=>({...p,group:p.group||'Mes aliments'})),...ciqualPresets];
+const normalizeSearchText=value=>(value||'')
+  .toString()
+  .trim()
+  .toLowerCase()
+  .replace(/[œŒ]/g,'oe')
+  .replace(/[æÆ]/g,'ae')
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g,'');
 function openEditPreset(id){
   const p=loadCustom().find(x=>x.id===id);
   if(!p)return;
@@ -3159,10 +3167,16 @@ document.getElementById('calcPortionCount').addEventListener('input',updateCalcP
 // OFF SEARCH
 // ═══════════════════════════════════════════
 async function searchOFF(query){
-  const url=`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=50&lc=fr&fields=product_name,brands,nutriments,serving_size,serving_quantity,code`;
-  const res=await fetch(url);if(!res.ok)throw new Error('HTTP '+res.status);
-  const data=await res.json();
-  return(data.products||[]).filter(p=>{const k=p.nutriments?.['energy-kcal_100g']??p.nutriments?.['energy-kcal'];return k!=null&&k>0&&p.product_name?.trim();});
+  const base=normalizeSearchText(query);
+  const variants=[query.trim(),base,base.replace(/oe/g,'œ')].filter((v,i,a)=>v&&a.indexOf(v)===i);
+  for(const term of variants){
+    const url=`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(term)}&search_simple=1&action=process&json=1&page_size=50&lc=fr&fields=product_name,brands,nutriments,serving_size,serving_quantity,code`;
+    const res=await fetch(url);if(!res.ok)throw new Error('HTTP '+res.status);
+    const data=await res.json();
+    const products=(data.products||[]).filter(p=>{const k=p.nutriments?.['energy-kcal_100g']??p.nutriments?.['energy-kcal'];return k!=null&&k>0&&p.product_name?.trim();});
+    if(products.length)return products;
+  }
+  return [];
 }
 function buildResultItem(p,onSelect){
   const kcal=Math.round(p.nutriments?.['energy-kcal_100g']??p.nutriments?.['energy-kcal']??0);
@@ -3814,13 +3828,13 @@ const ingDropdown=document.getElementById('ingDropdown');
 let selectedIngPreset=null; // preset object
 
 function buildIngDropdown(filter=''){
-  const q=filter.toLowerCase().trim();
+  const q=normalizeSearchText(filter);
   ingDropdown.innerHTML='';
-  const matches=allPresets().filter(p=>
-    !q||p.name.toLowerCase().includes(q)||
-    (p.emoji||'').includes(q)||
-    (p.group||'').toLowerCase().includes(q)
-  );
+  const matches=allPresets().filter(p=>{
+    const n=normalizeSearchText(p.name);
+    const g=normalizeSearchText(p.group);
+    return !q||n.includes(q)||(p.emoji||'').includes(q)||g.includes(q);
+  });
   if(!matches.length){
     ingDropdown.innerHTML='<div style="padding:10px 14px;font-size:11px;color:var(--text-dim);">Aucun résultat</div>';
     return;
@@ -4157,10 +4171,10 @@ function renderRecipeList(){
     document.getElementById('recipesEmptyMsg').textContent='Aucune recette sauvegardée';
     empty.style.display='';return;
   }
-  const q=recipeSearchQuery.toLowerCase().trim();
+  const q=normalizeSearchText(recipeSearchQuery);
   const recipes=allRecipes.filter(r=>{
     if(recipeCategoryFilter!=='all'&&(r.category||'meal')!==recipeCategoryFilter)return false;
-    if(q&&!r.name.toLowerCase().includes(q))return false;
+    if(q&&!normalizeSearchText(r.name).includes(q))return false;
     return true;
   });
   if(!recipes.length){
@@ -4373,12 +4387,12 @@ const presetSelectedDisplay = document.getElementById('presetSelectedDisplay');
 const presetSelectedName    = document.getElementById('presetSelectedName');
 
 function buildPresetDropdown(filter=''){
-  const q = filter.toLowerCase().trim();
+  const q = normalizeSearchText(filter);
   presetDropdown.innerHTML = '';
   const customIds = new Set(loadCustom().map(c=>c.id));
   const groups = {};
   allPresets().forEach(p=>{
-    if(q && !p.name.toLowerCase().includes(q) && !(p.emoji||'').includes(q) && !(p.group||'').toLowerCase().includes(q)) return;
+    if(q && !normalizeSearchText(p.name).includes(q) && !(p.emoji||'').includes(q) && !normalizeSearchText(p.group).includes(q)) return;
     const g = p.group||'Divers'; if(!groups[g]) groups[g]=[];groups[g].push(p);
   });
   const total = Object.values(groups).reduce((s,a)=>s+a.length,0);
@@ -4458,15 +4472,15 @@ function buildPresetDropdown(filter=''){
 
 function buildPresetDropdown(filter=''){
   presetDropdown.innerHTML='';
-  const q=filter.trim().toLowerCase();
+  const q=normalizeSearchText(filter);
   const customIds=new Set(loadCustom().map(c=>c.id));
   const sources=q?allPresets():[...DEFAULT_PRESETS,...loadCustom().map(p=>({...p,group:p.group||'Mes aliments'}))];
   const MAX=80;
   const scored=[];
   for(const p of sources){
-    const n=(p.name||'').toLowerCase();
+    const n=normalizeSearchText(p.name);
     const e=(p.emoji||'').toLowerCase();
-    const g=(p.group||'').toLowerCase();
+    const g=normalizeSearchText(p.group);
     if(q){
       if(!n.includes(q)&&!e.includes(q)&&!g.includes(q))continue;
       let s=5;
