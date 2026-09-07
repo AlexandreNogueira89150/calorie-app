@@ -628,6 +628,92 @@ body{
   font-size:13px;
 }
 .meal-totals-row td:first-child{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-muted);}
+.meal-mobile-list{display:none;}
+.meal-mobile-summary{
+  background:var(--surface);
+  border:1.5px solid var(--border);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:12px;
+  margin-bottom:10px;
+}
+.meal-mobile-summary-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;}
+.meal-mobile-summary-label{font-size:11px;font-weight:600;text-transform:uppercase;color:var(--text-muted);}
+.meal-mobile-summary-kcal{font-size:26px;font-weight:800;line-height:1.1;color:var(--accent);margin-top:2px;}
+.meal-mobile-summary-qty{font-size:11px;color:var(--text-dim);text-align:right;padding-top:2px;}
+.meal-mobile-macros{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px;}
+.meal-mobile-macro{background:var(--surface2);border-radius:var(--radius-sm);padding:8px;}
+.meal-mobile-macro span{display:block;font-size:10px;color:var(--text-dim);margin-bottom:2px;}
+.meal-mobile-macro strong{font-size:14px;color:var(--text);}
+.meal-mobile-card{
+  background:var(--surface);
+  border:1.5px solid var(--border);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:11px;
+  margin-bottom:9px;
+}
+.meal-mobile-card-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;}
+.meal-mobile-name{font-size:14px;font-weight:700;color:var(--text);line-height:1.25;}
+.meal-mobile-sub{font-size:11px;color:var(--text-dim);margin-top:2px;}
+.meal-mobile-kcal{font-size:18px;font-weight:800;color:var(--accent);white-space:nowrap;line-height:1.1;}
+.meal-mobile-kcal span{display:block;font-size:10px;font-weight:600;color:var(--text-dim);text-align:right;margin-top:2px;}
+.meal-mobile-card-macros{display:flex;flex-wrap:wrap;gap:8px;font-size:11px;color:var(--text-muted);margin-top:9px;}
+.meal-mobile-actions{display:grid;grid-template-columns:40px minmax(72px,1fr) 40px 44px 44px;gap:6px;margin-top:10px;}
+.meal-mobile-step,.meal-mobile-qty,.meal-mobile-share,.meal-mobile-delete{
+  min-height:38px;
+  border-radius:var(--radius-sm);
+  font-family:'Inter',sans-serif;
+  font-size:14px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.meal-mobile-step{
+  border:1.5px solid var(--border);
+  background:var(--surface2);
+  color:var(--text);
+  cursor:pointer;
+}
+.meal-mobile-qty{
+  border:1.5px solid var(--border);
+  background:var(--bg);
+  color:var(--text);
+  font-weight:700;
+  text-align:center;
+  width:100%;
+  outline:none;
+  appearance:none;
+  -moz-appearance:textfield;
+}
+.meal-mobile-qty::-webkit-outer-spin-button,.meal-mobile-qty::-webkit-inner-spin-button{-webkit-appearance:none;}
+.meal-mobile-qty:focus{border-color:var(--accent);}
+.meal-mobile-share{
+  border:1.5px solid var(--accent);
+  background:var(--accent-light);
+  color:var(--accent);
+  font-weight:800;
+  cursor:pointer;
+}
+.meal-mobile-delete{
+  border:1.5px solid var(--border);
+  background:var(--surface);
+  color:var(--red);
+  cursor:pointer;
+}
+.meal-action-bar{display:flex;gap:8px;margin-top:8px;}
+.meal-action-bar .share-meal-action{flex:1.2;font-size:10px;padding:7px;}
+.meal-action-bar .secondary-meal-action{flex:1;font-size:9px;padding:7px;}
+@media(max-width:767px){
+  .meal-table-wrap{display:none;}
+  .meal-mobile-list{display:block;}
+  .meal-action-bar{display:grid;grid-template-columns:1.25fr 1fr 1fr;}
+  .meal-action-bar .share-meal-action{order:-1;}
+}
+@media(max-width:360px){
+  .meal-mobile-actions{grid-template-columns:38px minmax(64px,1fr) 38px 40px 40px;}
+  .meal-action-bar{grid-template-columns:1fr;}
+}
 
 /* ── COLORS ── */
 .kv{color:var(--accent);font-weight:600;}
@@ -3227,6 +3313,149 @@ async function rejectShareRequest(req){
   }
 }
 
+function mealItemDisplay(item){
+  const isFixed=item.fixed===true;
+  const qtyMode=item.qtyMode||'raw';
+  const subLabel=isFixed?(item.fixedLabel||'portion'):qtyMode==='cooked'?'cuit':qtyMode==='kcal'?'kcal visées':(item.noCook?'':'cru');
+  if(isFixed){
+    return {
+      isFixed, qtyMode, subLabel,
+      value:item.fixedUnits||1,
+      unitLabel:item.fixedLabel||'×',
+      step:1,
+      display:shareItemQtyLabel(item)
+    };
+  }
+  if(qtyMode==='cooked'&&item.cookedG!=null){
+    return {isFixed,qtyMode,subLabel,value:item.cookedG,unitLabel:'g',step:10,display:shareItemQtyLabel(item)};
+  }
+  if(qtyMode==='kcal'){
+    return {isFixed,qtyMode,subLabel,value:item.kcal,unitLabel:'kcal',step:25,display:shareItemQtyLabel(item)};
+  }
+  return {isFixed,qtyMode,subLabel,value:item.rawG,unitLabel:'g',step:10,display:shareItemQtyLabel(item)};
+}
+
+function updateMealItemQuantity(idx,value){
+  const v=parseFloat(value);
+  if(!v||v<=0)return;
+  const d=getDayData(viewDateKey);
+  const it=d[activeMealType][idx];
+  if(!it)return;
+  const isFixed=it.fixed===true;
+  if(isFixed){
+    it.fixedUnits=v;
+    const kcalUnit=it.fixedKcalPerUnit||it.fixedKcal||it.kcal||0;
+    it.kcal=Math.round(v*kcalUnit*10)/10;
+    if(it.fixedPPerUnit!=null) it.p=Math.round(v*it.fixedPPerUnit*100)/100;
+    if(it.fixedCPerUnit!=null) it.c=Math.round(v*it.fixedCPerUnit*100)/100;
+    if(it.fixedFPerUnit!=null) it.f=Math.round(v*it.fixedFPerUnit*100)/100;
+  }else{
+    const qtyMode=it.qtyMode||'raw';
+    const oldRawG=Number(it.rawG)||0;
+    const kpg100=it.kcalPer100!=null?it.kcalPer100/100:(oldRawG>0?it.kcal/oldRawG:0);
+    let newRawG;
+    if(qtyMode==='cooked'&&it.ratio){newRawG=v/it.ratio;}
+    else if(qtyMode==='kcal'){newRawG=kpg100>0?v/kpg100:oldRawG;}
+    else{newRawG=v;}
+    it.rawG=Math.round(newRawG*10)/10;
+    it.kcal=qtyMode==='kcal'?Math.round(v*10)/10:Math.round(newRawG*kpg100*10)/10;
+    if(it.ratio) it.cookedG=Math.round(newRawG*it.ratio*10)/10;
+    if(oldRawG>0){
+      if(it.p!=null) it.p=Math.round(it.p/oldRawG*newRawG*100)/100;
+      if(it.c!=null) it.c=Math.round(it.c/oldRawG*newRawG*100)/100;
+      if(it.f!=null) it.f=Math.round(it.f/oldRawG*newRawG*100)/100;
+    }
+  }
+  setDayData(viewDateKey,d);
+  renderMealSection();
+  updateGoalBanner();
+}
+
+function adjustMealItemQuantity(idx,delta){
+  const item=getDayData(viewDateKey)[activeMealType][idx];
+  if(!item)return;
+  const meta=mealItemDisplay(item);
+  const min=meta.isFixed?1:meta.unitLabel==='kcal'?25:1;
+  const next=Math.max(min,(parseFloat(meta.value)||0)+delta);
+  updateMealItemQuantity(idx,next);
+}
+
+function deleteMealItem(idx){
+  const d=getDayData(viewDateKey);
+  d[activeMealType].splice(idx,1);
+  setDayData(viewDateKey,d);
+  renderMealSection();
+  updateGoalBanner();
+}
+
+function buildMealMobileSummary(items,total){
+  const summary=document.createElement('div');
+  summary.className='meal-mobile-summary';
+  const tRStr=total.rawG>0?fmt(total.rawG,0)+'g':'—';
+  summary.innerHTML=`
+    <div class="meal-mobile-summary-head">
+      <div>
+        <div class="meal-mobile-summary-label">${MEAL_LABELS[activeMealType]}</div>
+        <div class="meal-mobile-summary-kcal">${fmt(total.kcal,0)} kcal</div>
+      </div>
+      <div class="meal-mobile-summary-qty">${items.length} aliment(s)<br>${tRStr}</div>
+    </div>
+    <div class="meal-mobile-macros">
+      <div class="meal-mobile-macro"><span>Protéines</span><strong>${fmt(total.p)}g</strong></div>
+      <div class="meal-mobile-macro"><span>Glucides</span><strong>${fmt(total.c)}g</strong></div>
+      <div class="meal-mobile-macro"><span>Lipides</span><strong>${fmt(total.f)}g</strong></div>
+    </div>`;
+  return summary;
+}
+
+function buildMealMobileCard(item,idx){
+  const meta=mealItemDisplay(item);
+  const card=document.createElement('div');
+  card.className='meal-mobile-card fade-in';
+
+  const head=document.createElement('div');
+  head.className='meal-mobile-card-head';
+  const title=document.createElement('div');
+  const name=document.createElement('div');
+  name.className='meal-mobile-name';
+  name.textContent=(item.emoji?item.emoji+' ':'')+(item.name||'Aliment');
+  const sub=document.createElement('div');
+  sub.className='meal-mobile-sub';
+  sub.textContent=meta.display+(meta.subLabel?' · '+meta.subLabel:'');
+  title.appendChild(name);title.appendChild(sub);
+  const kcal=document.createElement('div');
+  kcal.className='meal-mobile-kcal';
+  kcal.innerHTML=`${fmt(item.kcal,0)}<span>kcal</span>`;
+  head.appendChild(title);head.appendChild(kcal);
+  card.appendChild(head);
+
+  const macros=document.createElement('div');
+  macros.className='meal-mobile-card-macros';
+  macros.innerHTML=`<span class="pv">P ${item.p!=null?fmt(item.p)+'g':'—'}</span><span class="cv">G ${item.c!=null?fmt(item.c)+'g':'—'}</span><span class="fv">L ${item.f!=null?fmt(item.f)+'g':'—'}</span>`;
+  card.appendChild(macros);
+
+  const actions=document.createElement('div');
+  actions.className='meal-mobile-actions';
+  const minus=document.createElement('button');
+  minus.type='button';minus.className='meal-mobile-step';minus.textContent='−';
+  minus.addEventListener('click',()=>adjustMealItemQuantity(idx,-meta.step));
+  const qty=document.createElement('input');
+  qty.type='number';qty.className='meal-mobile-qty';qty.min=meta.isFixed?1:1;qty.step=meta.step;qty.value=meta.unitLabel==='kcal'?Math.round(meta.value):Math.round(meta.value*10)/10;
+  qty.addEventListener('change',()=>updateMealItemQuantity(idx,qty.value));
+  const plus=document.createElement('button');
+  plus.type='button';plus.className='meal-mobile-step';plus.textContent='+';
+  plus.addEventListener('click',()=>adjustMealItemQuantity(idx,meta.step));
+  const share=document.createElement('button');
+  share.type='button';share.className='meal-mobile-share';share.textContent='↗';share.title='Partager';
+  share.addEventListener('click',()=>openShareModal('item',[item]));
+  const del=document.createElement('button');
+  del.type='button';del.className='meal-mobile-delete';del.textContent='×';del.title='Supprimer';
+  del.addEventListener('click',()=>deleteMealItem(idx));
+  actions.appendChild(minus);actions.appendChild(qty);actions.appendChild(plus);actions.appendChild(share);actions.appendChild(del);
+  card.appendChild(actions);
+  return card;
+}
+
 // ═══════════════════════════════════════════
 // MEAL RENDER
 // ═══════════════════════════════════════════
@@ -3341,10 +3570,7 @@ function renderMealSection(){
     shareBtn.style.marginRight='4px';
     shareBtn.addEventListener('click',()=>openShareModal('item',[item]));
     const delBtn=document.createElement('button');delBtn.className='del-row';delBtn.textContent='×';
-    delBtn.addEventListener('click',()=>{
-      const d=getDayData(viewDateKey);d[activeMealType].splice(idx,1);setDayData(viewDateKey,d);
-      renderMealSection();updateGoalBanner();
-    });
+    delBtn.addEventListener('click',()=>deleteMealItem(idx));
     delTd.appendChild(shareBtn);delTd.appendChild(delBtn);
 
     tr.appendChild(nameTd);tr.appendChild(qtyTd);tr.appendChild(kcalTd);tr.appendChild(pTd);tr.appendChild(cTd);tr.appendChild(fTd);tr.appendChild(delTd);
@@ -3356,6 +3582,7 @@ function renderMealSection(){
   const tC=items.reduce((a,i)=>a+(Number(i.c)||0),0);
   const tF=items.reduce((a,i)=>a+(Number(i.f)||0),0);
   const tR=items.reduce((a,i)=>a+(i.fixed?0:(Number(i.rawG)||0)),0);
+  const totals={kcal:tK,p:tP,c:tC,f:tF,rawG:tR};
   const tRStr=tR>0?fmt(tR,0)+'g':'—';
   const tfootTr=document.createElement('tr');tfootTr.className='meal-totals-row';
   tfootTr.innerHTML=`
@@ -3372,19 +3599,25 @@ function renderMealSection(){
   card.appendChild(table);
   container.appendChild(card);
 
+  const mobileList=document.createElement('div');
+  mobileList.className='meal-mobile-list';
+  mobileList.appendChild(buildMealMobileSummary(items,totals));
+  items.forEach((item,idx)=>mobileList.appendChild(buildMealMobileCard(item,idx)));
+  container.appendChild(mobileList);
+
   // action bar: load saved + dup meal
   const actionBar=document.createElement('div');
-  actionBar.style.cssText='display:flex;gap:8px;margin-top:8px;';
+  actionBar.className='meal-action-bar';
   const loadBtn=document.createElement('button');
-  loadBtn.className='btn-ghost';loadBtn.style.cssText='flex:1;font-size:9px;padding:7px;';
+  loadBtn.className='btn-ghost secondary-meal-action';
   loadBtn.textContent='📥 Charger un repas';
   loadBtn.addEventListener('click',openSavedMeals);
   const dupBtn=document.createElement('button');
-  dupBtn.className='btn-ghost';dupBtn.style.cssText='flex:1;font-size:9px;padding:7px;';
+  dupBtn.className='btn-ghost secondary-meal-action';
   dupBtn.textContent='⧉ Copier ce repas';
   dupBtn.addEventListener('click',()=>openDupMeal(activeMealType));
   const shareMealBtn=document.createElement('button');
-  shareMealBtn.className='btn-accent';shareMealBtn.style.cssText='flex:1.2;font-size:10px;padding:7px;';
+  shareMealBtn.className='btn-accent share-meal-action';
   shareMealBtn.textContent='↗ Partager ce repas';
   shareMealBtn.addEventListener('click',()=>openShareModal('meal',items));
   actionBar.appendChild(loadBtn);actionBar.appendChild(dupBtn);actionBar.appendChild(shareMealBtn);
