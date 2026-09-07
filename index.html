@@ -2989,6 +2989,41 @@ function memberName(uid){
   return m.name || m.email || 'Membre';
 }
 
+function escapeHtml(value){
+  return (value||'').toString().replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function shareItemQtyLabel(item){
+  if(item.fixed){
+    const units=item.fixedUnits||1;
+    return `${fmt(units,units%1?1:0)} ${item.fixedLabel||'portion'}${units>1&&!item.fixedLabel?'s':''}`;
+  }
+  const qtyMode=item.qtyMode||'raw';
+  if(qtyMode==='cooked'&&item.cookedG!=null) return `${fmt(item.cookedG,0)}g cuits`;
+  if(qtyMode==='kcal') return `${fmt(item.kcal,0)} kcal visées`;
+  return `${fmt(item.rawG,0)}g${item.noCook?'':' crus'}`;
+}
+
+function shareRequestSummary(req){
+  const items=req.items||[];
+  const kcal=items.reduce((sum,item)=>sum+(Number(item.kcal)||0),0);
+  const macros={
+    p:items.reduce((sum,item)=>sum+(Number(item.p)||0),0),
+    c:items.reduce((sum,item)=>sum+(Number(item.c)||0),0),
+    f:items.reduce((sum,item)=>sum+(Number(item.f)||0),0)
+  };
+  return `${fmt(kcal,0)} kcal · P ${fmt(macros.p)}g · G ${fmt(macros.c)}g · L ${fmt(macros.f)}g`;
+}
+
+function shareRequestDetailsHtml(req){
+  const items=req.items||[];
+  const visible=items.slice(0,4).map(item=>
+    `<div style="font-size:11px;color:var(--text-muted);line-height:1.35;">${escapeHtml(item.emoji||'')} ${escapeHtml(item.name||'Aliment')} · ${escapeHtml(shareItemQtyLabel(item))} · ${fmt(item.kcal,0)} kcal</div>`
+  ).join('');
+  const more=items.length>4?`<div style="font-size:11px;color:var(--text-dim);line-height:1.35;">+ ${items.length-4} autre(s) aliment(s)</div>`:'';
+  return visible+more;
+}
+
 function shareRequestsRef(){
   return sharedDocRef('shareRequests');
 }
@@ -3100,15 +3135,20 @@ async function refreshShareInbox(){
     list.innerHTML='';
     requests.forEach(req=>{
       const row=document.createElement('div');
-      row.style.cssText='display:flex;align-items:center;gap:10px;padding:10px;background:var(--surface2);border-radius:var(--radius-sm);';
-      const label=req.type==='meal'?`${req.items?.length||0} aliment(s)`:(req.items?.[0]?.name||'Aliment');
+      row.style.cssText='display:flex;align-items:flex-start;gap:10px;padding:10px;background:var(--surface2);border-radius:var(--radius-sm);';
+      const label=req.type==='meal'?`Repas partagé · ${req.items?.length||0} aliment(s)`:'Aliment partagé';
       row.innerHTML=`
         <div style="flex:1;min-width:0;">
           <div style="font-size:13px;font-weight:600;color:var(--text);">${label}</div>
           <div style="font-size:11px;color:var(--text-dim);">De ${req.fromName||memberName(req.fromUid)} · ${MEAL_LABELS[req.mealType]||'Repas'} · ${fmtDateKey(req.dateKey)}</div>
+          <div style="font-size:11px;color:var(--accent);font-weight:600;margin-top:5px;">${shareRequestSummary(req)}</div>
+          <div style="margin-top:5px;">${shareRequestDetailsHtml(req)}</div>
         </div>
-        <button class="btn-accent accept-share-btn" data-id="${req.id}" style="font-size:11px;padding:7px 10px;">Accepter</button>
-        <button class="btn-ghost reject-share-btn" data-id="${req.id}" style="font-size:11px;padding:7px 10px;">Refuser</button>`;
+        <div style="display:flex;flex-direction:column;gap:6px;flex:none;">
+          <button class="btn-accent accept-share-btn" data-id="${req.id}" style="font-size:11px;padding:7px 10px;">Accepter</button>
+          <button class="btn-ghost reject-share-btn" data-id="${req.id}" style="font-size:11px;padding:7px 10px;">Refuser</button>
+        </div>
+      `;
       list.appendChild(row);
     });
     list.querySelectorAll('.accept-share-btn').forEach(btn=>btn.addEventListener('click',()=>acceptShareRequest(requests.find(r=>r.id===btn.dataset.id))));
