@@ -613,6 +613,12 @@ body{
   transition:color 0.1s;line-height:1;
 }
 .del-row:hover{color:var(--red);}
+.share-row{
+  background:none;border:none;color:var(--text-dim);
+  cursor:pointer;font-size:15px;padding:0 4px;
+  transition:color 0.1s;line-height:1;
+}
+.share-row:hover{color:var(--accent);}
 .meal-totals-row td{
   font-weight:700;color:var(--text);
   background:var(--surface2);
@@ -1491,6 +1497,11 @@ body{
     <button class="date-action-btn danger" id="clearDayBtn">Vider</button>
   </div>
 
+  <div class="card" id="shareInboxCard" style="display:none;">
+    <div class="card-title">Demandes reçues <span id="shareInboxCount" style="color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0;"></span></div>
+    <div id="shareInboxList" style="display:flex;flex-direction:column;gap:8px;"></div>
+  </div>
+
   <!-- Meal type tabs -->
   <div class="meal-type-tabs">
     <button class="meal-type-tab active" data-mtype="breakfast"><span class="tab-icon">🌅</span>Petit-déj</button>
@@ -1977,6 +1988,23 @@ body{
     <div class="modal-actions">
       <button class="btn-primary" id="confirmDupMeal">Copier</button>
       <button class="btn-secondary" id="cancelDupMeal">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: SHARE MEAL / ITEM -->
+<div class="modal-overlay" id="modalShareMeal">
+  <div class="modal">
+    <h3 id="shareMealTitle">Partager</h3>
+    <div id="shareMealInfo" style="font-size:11px;color:var(--text-muted);margin-bottom:14px;"></div>
+    <div class="field">
+      <label>Destinataire</label>
+      <select id="shareMealTarget" class="itxt" style="font-size:13px;cursor:pointer;"></select>
+    </div>
+    <div id="shareMealStatus" style="font-size:12px;margin-top:8px;min-height:18px;"></div>
+    <div class="modal-actions">
+      <button class="btn-primary" id="confirmShareMeal">Envoyer</button>
+      <button class="btn-secondary" id="cancelShareMeal">Annuler</button>
     </div>
   </div>
 </div>
@@ -2944,10 +2972,209 @@ document.querySelectorAll('.meal-type-tab').forEach(btn=>{
 });
 
 // ═══════════════════════════════════════════
+// SHARE REQUESTS
+// ═══════════════════════════════════════════
+let currentShareDraft=null;
+
+function cloneMealForShare(item){
+  const copy=JSON.parse(JSON.stringify(item));
+  delete copy.id;
+  return copy;
+}
+
+function memberName(uid){
+  const m=familyMembers.find(x=>x.id===uid) || _membersCache[uid];
+  if(!m) return uid===currentUser?.uid?'Toi':'Membre';
+  return m.name || m.email || 'Membre';
+}
+
+function shareRequestDocRef(id){
+  if(!currentFamilyId || !window.firebase) return null;
+  const { doc, db } = window.firebase;
+  return doc(db,'families',currentFamilyId,'shareRequests',id);
+}
+
+async function openShareModal(type, sourceItems){
+  if(!_syncEnabled || !currentFamilyId || !currentUser){
+    alert('Connexion famille requise pour partager.');
+    return;
+  }
+  await refreshFamilyUI();
+  const senderId=activeUserId();
+  const targets=familyMembers.filter(m=>m.id!==senderId);
+  if(!targets.length){
+    alert('Aucun autre membre dans la famille.');
+    return;
+  }
+  const items=sourceItems.map(cloneMealForShare);
+  currentShareDraft={type,items,dateKey:viewDateKey,mealType:activeMealType,fromUid:senderId};
+  const select=document.getElementById('shareMealTarget');
+  select.innerHTML='';
+  targets.forEach(m=>{
+    const opt=document.createElement('option');
+    opt.value=m.id;
+    opt.textContent=m.name||m.email||'Membre';
+    select.appendChild(opt);
+  });
+  document.getElementById('shareMealTitle').textContent=type==='meal'?'Partager le repas':'Partager l\'aliment';
+  document.getElementById('shareMealInfo').textContent=
+    `${type==='meal'?items.length+' aliment(s)':items[0]?.name||'Aliment'} · ${MEAL_LABELS[activeMealType]} · ${fmtDateKey(viewDateKey)}`;
+  document.getElementById('shareMealStatus').textContent='';
+  document.getElementById('modalShareMeal').classList.add('open');
+}
+
+async function sendShareRequest(){
+  if(!currentShareDraft || !window.firebase) return;
+  const targetUid=document.getElementById('shareMealTarget').value;
+  const status=document.getElementById('shareMealStatus');
+  if(!targetUid){return;}
+  status.style.color='var(--text-muted)';
+  status.innerHTML='<span class="spinner"></span>Envoi…';
+  const reqId='share_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
+  const now=new Date().toISOString();
+  const req={
+    ...currentShareDraft,
+    toUid:targetUid,
+    createdByUid:currentUser.uid,
+    fromName:memberName(currentShareDraft.fromUid),
+    toName:memberName(targetUid),
+    status:'pending',
+    createdAt:now,
+    updatedAt:now
+  };
+  try{
+    const { setDoc } = window.firebase;
+    await setDoc(shareRequestDocRef(reqId), req);
+    status.style.color='var(--green)';
+    status.textContent='Demande envoyée.';
+    setTimeout(()=>{
+      document.getElementById('modalShareMeal').classList.remove('open');
+      currentShareDraft=null;
+    },700);
+  }catch(e){
+    console.error('[share] send',e);
+    status.style.color='var(--red)';
+    status.textContent='Erreur lors de l\'envoi.';
+  }
+}
+
+async function loadIncomingShareRequests(){
+  if(!_syncEnabled || !currentFamilyId || !window.firebase || !activeUserId()) return [];
+  const { collection, getDocs, query, where, db } = window.firebase;
+  const q=query(
+    collection(db,'families',currentFamilyId,'shareRequests'),
+    where('toUid','==',activeUserId()),
+    where('status','==','pending')
+  );
+  const snap=await getDocs(q);
+  const requests=[];
+  snap.forEach(d=>requests.push({id:d.id,...d.data()}));
+  requests.sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
+  return requests;
+}
+
+async function refreshShareInbox(){
+  const card=document.getElementById('shareInboxCard');
+  const list=document.getElementById('shareInboxList');
+  const countEl=document.getElementById('shareInboxCount');
+  if(!card||!list||!countEl) return;
+  if(!_syncEnabled || !currentFamilyId){
+    card.style.display='none';
+    return;
+  }
+  try{
+    const requests=await loadIncomingShareRequests();
+    if(!requests.length){
+      card.style.display='none';
+      return;
+    }
+    card.style.display='';
+    countEl.textContent='('+requests.length+')';
+    list.innerHTML='';
+    requests.forEach(req=>{
+      const row=document.createElement('div');
+      row.style.cssText='display:flex;align-items:center;gap:10px;padding:10px;background:var(--surface2);border-radius:var(--radius-sm);';
+      const label=req.type==='meal'?`${req.items?.length||0} aliment(s)`:(req.items?.[0]?.name||'Aliment');
+      row.innerHTML=`
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:600;color:var(--text);">${label}</div>
+          <div style="font-size:11px;color:var(--text-dim);">De ${req.fromName||memberName(req.fromUid)} · ${MEAL_LABELS[req.mealType]||'Repas'} · ${fmtDateKey(req.dateKey)}</div>
+        </div>
+        <button class="btn-accent accept-share-btn" data-id="${req.id}" style="font-size:11px;padding:7px 10px;">Accepter</button>
+        <button class="btn-ghost reject-share-btn" data-id="${req.id}" style="font-size:11px;padding:7px 10px;">Refuser</button>`;
+      list.appendChild(row);
+    });
+    list.querySelectorAll('.accept-share-btn').forEach(btn=>btn.addEventListener('click',()=>acceptShareRequest(requests.find(r=>r.id===btn.dataset.id))));
+    list.querySelectorAll('.reject-share-btn').forEach(btn=>btn.addEventListener('click',()=>rejectShareRequest(requests.find(r=>r.id===btn.dataset.id))));
+  }catch(e){
+    console.error('[share] inbox',e);
+    card.style.display='none';
+  }
+}
+
+async function updateShareRequestStatus(req,status){
+  const { setDoc } = window.firebase;
+  await setDoc(shareRequestDocRef(req.id), {
+    status,
+    updatedAt:new Date().toISOString(),
+    handledByUid:currentUser.uid
+  }, { merge:true });
+}
+
+async function pushMealsHistoryNow(){
+  if(!_syncEnabled || !currentFamilyId || !window.firebase) return;
+  const raw=localStorage.getItem(LS_MEALS);
+  const data=raw?JSON.parse(raw):{};
+  const { setDoc } = window.firebase;
+  await setDoc(personalDocRef('mealsHistory'), { data }, { merge:true });
+}
+
+async function acceptShareRequest(req){
+  if(!req || req.toUid!==activeUserId()) return;
+  try{
+    const d=getDayData(req.dateKey);
+    const targetType=req.mealType||activeMealType;
+    if(!d[targetType]) d[targetType]=[];
+    (req.items||[]).forEach(item=>{
+      d[targetType].push({
+        ...cloneMealForShare(item),
+        id:Date.now()+Math.random(),
+        sharedFrom:req.fromUid,
+        shareRequestId:req.id
+      });
+    });
+    setDayData(req.dateKey,d);
+    await pushMealsHistoryNow();
+    await updateShareRequestStatus(req,'accepted');
+    viewDateKey=req.dateKey;
+    updateDateNav();
+    activeMealType=targetType;
+    document.querySelectorAll('.meal-type-tab').forEach(b=>b.classList.toggle('active',b.dataset.mtype===targetType));
+    renderMealSection();
+    updateGoalBanner();
+  }catch(e){
+    console.error('[share] accept',e);
+    alert('Impossible d\'accepter cette demande.');
+  }
+}
+
+async function rejectShareRequest(req){
+  if(!req || req.toUid!==activeUserId()) return;
+  try{
+    await updateShareRequestStatus(req,'rejected');
+    refreshShareInbox();
+  }catch(e){
+    console.error('[share] reject',e);
+    alert('Impossible de refuser cette demande.');
+  }
+}
+
+// ═══════════════════════════════════════════
 // MEAL RENDER
 // ═══════════════════════════════════════════
 function renderMealSection(){
   renderMealTypeBadges();
+  refreshShareInbox();
   const data=getDayData(viewDateKey);
   const items=data[activeMealType];
   const container=document.getElementById('mealContent');
@@ -3052,12 +3279,15 @@ function renderMealSection(){
     const fTd=document.createElement('td');fTd.className='fv';fTd.textContent=item.f!=null?fmt(item.f):'—';
 
     const delTd=document.createElement('td');
+    const shareBtn=document.createElement('button');shareBtn.className='share-row';shareBtn.textContent='↗';shareBtn.title='Partager';
+    shareBtn.style.marginRight='4px';
+    shareBtn.addEventListener('click',()=>openShareModal('item',[item]));
     const delBtn=document.createElement('button');delBtn.className='del-row';delBtn.textContent='×';
     delBtn.addEventListener('click',()=>{
       const d=getDayData(viewDateKey);d[activeMealType].splice(idx,1);setDayData(viewDateKey,d);
       renderMealSection();updateGoalBanner();
     });
-    delTd.appendChild(delBtn);
+    delTd.appendChild(shareBtn);delTd.appendChild(delBtn);
 
     tr.appendChild(nameTd);tr.appendChild(qtyTd);tr.appendChild(kcalTd);tr.appendChild(pTd);tr.appendChild(cTd);tr.appendChild(fTd);tr.appendChild(delTd);
     tbody.appendChild(tr);
@@ -3095,7 +3325,11 @@ function renderMealSection(){
   dupBtn.className='btn-ghost';dupBtn.style.cssText='flex:1;font-size:9px;padding:7px;';
   dupBtn.textContent='⧉ Copier ce repas';
   dupBtn.addEventListener('click',()=>openDupMeal(activeMealType));
-  actionBar.appendChild(loadBtn);actionBar.appendChild(dupBtn);
+  const shareMealBtn=document.createElement('button');
+  shareMealBtn.className='btn-ghost';shareMealBtn.style.cssText='flex:1;font-size:9px;padding:7px;';
+  shareMealBtn.textContent='↗ Partager ce repas';
+  shareMealBtn.addEventListener('click',()=>openShareModal('meal',items));
+  actionBar.appendChild(loadBtn);actionBar.appendChild(dupBtn);actionBar.appendChild(shareMealBtn);
   container.appendChild(actionBar);
 }
 
@@ -4771,6 +5005,10 @@ document.getElementById('confirmDupMeal').addEventListener('click',()=>{
 });
 document.getElementById('cancelDupMeal').addEventListener('click',()=>document.getElementById('modalDupMeal').classList.remove('open'));
 document.getElementById('modalDupMeal').addEventListener('click',e=>{if(e.target===document.getElementById('modalDupMeal'))document.getElementById('modalDupMeal').classList.remove('open');});
+
+document.getElementById('confirmShareMeal').addEventListener('click',sendShareRequest);
+document.getElementById('cancelShareMeal').addEventListener('click',()=>{document.getElementById('modalShareMeal').classList.remove('open');currentShareDraft=null;});
+document.getElementById('modalShareMeal').addEventListener('click',e=>{if(e.target===document.getElementById('modalShareMeal')){document.getElementById('modalShareMeal').classList.remove('open');currentShareDraft=null;}});
 
 // Dup day
 document.getElementById('dupDayBtn').addEventListener('click',()=>{
