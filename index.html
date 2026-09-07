@@ -614,11 +614,12 @@ body{
 }
 .del-row:hover{color:var(--red);}
 .share-row{
-  background:none;border:none;color:var(--text-dim);
-  cursor:pointer;font-size:15px;padding:0 4px;
-  transition:color 0.1s;line-height:1;
+  background:var(--accent-light);border:1px solid var(--accent);
+  color:var(--accent);border-radius:4px;
+  cursor:pointer;font-size:14px;font-weight:700;padding:3px 6px;
+  transition:all 0.1s;line-height:1;
 }
-.share-row:hover{color:var(--accent);}
+.share-row:hover{background:var(--accent);color:var(--bg);}
 .meal-totals-row td{
   font-weight:700;color:var(--text);
   background:var(--surface2);
@@ -2988,10 +2989,22 @@ function memberName(uid){
   return m.name || m.email || 'Membre';
 }
 
-function shareRequestDocRef(id){
-  if(!currentFamilyId || !window.firebase) return null;
-  const { doc, db } = window.firebase;
-  return doc(db,'families',currentFamilyId,'shareRequests',id);
+function shareRequestsRef(){
+  return sharedDocRef('shareRequests');
+}
+
+async function loadAllShareRequests(){
+  if(!_syncEnabled || !currentFamilyId || !window.firebase) return [];
+  const { getDoc } = window.firebase;
+  const snap=await getDoc(shareRequestsRef());
+  if(!snap.exists()) return [];
+  const data=snap.data();
+  return Array.isArray(data.items)?data.items:[];
+}
+
+async function saveAllShareRequests(items){
+  const { setDoc } = window.firebase;
+  await setDoc(shareRequestsRef(), { items }, { merge:true });
 }
 
 async function openShareModal(type, sourceItems){
@@ -3043,8 +3056,9 @@ async function sendShareRequest(){
     updatedAt:now
   };
   try{
-    const { setDoc } = window.firebase;
-    await setDoc(shareRequestDocRef(reqId), req);
+    const requests=await loadAllShareRequests();
+    requests.push({id:reqId,...req});
+    await saveAllShareRequests(requests);
     status.style.color='var(--green)';
     status.textContent='Demande envoyée.';
     setTimeout(()=>{
@@ -3054,23 +3068,16 @@ async function sendShareRequest(){
   }catch(e){
     console.error('[share] send',e);
     status.style.color='var(--red)';
-    status.textContent='Erreur lors de l\'envoi.';
+    status.textContent='Erreur lors de l\'envoi : '+(e.code||e.message||'inconnue');
   }
 }
 
 async function loadIncomingShareRequests(){
   if(!_syncEnabled || !currentFamilyId || !window.firebase || !activeUserId()) return [];
-  const { collection, getDocs, query, where, db } = window.firebase;
-  const q=query(
-    collection(db,'families',currentFamilyId,'shareRequests'),
-    where('toUid','==',activeUserId()),
-    where('status','==','pending')
-  );
-  const snap=await getDocs(q);
-  const requests=[];
-  snap.forEach(d=>requests.push({id:d.id,...d.data()}));
-  requests.sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
-  return requests;
+  const requests=await loadAllShareRequests();
+  return requests
+    .filter(r=>r.toUid===activeUserId()&&r.status==='pending')
+    .sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
 }
 
 async function refreshShareInbox(){
@@ -3113,12 +3120,16 @@ async function refreshShareInbox(){
 }
 
 async function updateShareRequestStatus(req,status){
-  const { setDoc } = window.firebase;
-  await setDoc(shareRequestDocRef(req.id), {
+  const requests=await loadAllShareRequests();
+  const idx=requests.findIndex(r=>r.id===req.id);
+  if(idx<0) return;
+  requests[idx]={
+    ...requests[idx],
     status,
     updatedAt:new Date().toISOString(),
     handledByUid:currentUser.uid
-  }, { merge:true });
+  };
+  await saveAllShareRequests(requests);
 }
 
 async function pushMealsHistoryNow(){
@@ -3326,7 +3337,7 @@ function renderMealSection(){
   dupBtn.textContent='⧉ Copier ce repas';
   dupBtn.addEventListener('click',()=>openDupMeal(activeMealType));
   const shareMealBtn=document.createElement('button');
-  shareMealBtn.className='btn-ghost';shareMealBtn.style.cssText='flex:1;font-size:9px;padding:7px;';
+  shareMealBtn.className='btn-accent';shareMealBtn.style.cssText='flex:1.2;font-size:10px;padding:7px;';
   shareMealBtn.textContent='↗ Partager ce repas';
   shareMealBtn.addEventListener('click',()=>openShareModal('meal',items));
   actionBar.appendChild(loadBtn);actionBar.appendChild(dupBtn);actionBar.appendChild(shareMealBtn);
