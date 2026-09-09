@@ -2856,6 +2856,25 @@ const findPresetByName=(name,excludeId)=>{
   const norm=name.trim().toLowerCase();
   return loadCustom().find(p=>p.id!==excludeId && (p.name||'').trim().toLowerCase()===norm)||null;
 };
+function selectedCustomPreset(){
+  return activeId ? loadCustom().find(p=>p.id===activeId) || null : null;
+}
+function resetSaveCurrentButton(){
+  const btn=document.getElementById('saveCurrentBtn');
+  btn.textContent='+ Sauvegarder aliment';
+  btn.style.background='';
+}
+function updateSaveCurrentButtonLabel(){
+  const btn=document.getElementById('saveCurrentBtn');
+  const p=selectedCustomPreset();
+  if(isCreatingNew&&pendingNewName)return;
+  if(p){
+    btn.textContent=p.fixed?'Modifier aliment':'Mettre à jour aliment';
+    btn.style.background='var(--green)';
+  }else{
+    resetSaveCurrentButton();
+  }
+}
 const loadRecipes=()=>{try{return JSON.parse(localStorage.getItem(LS_RECIPES)||'[]');}catch{return[];}};
 const saveRecipes=a=>{localStorage.setItem(LS_RECIPES,JSON.stringify(a));syncPushKey('recipes');};
 
@@ -3942,6 +3961,7 @@ function selectPreset(id){
       fixedFPerUnit:p.fixedF??null,
     };
     document.getElementById('addMealBtn').disabled=false;
+    updateSaveCurrentButtonLabel();
     renderPresets();
     return;
   }
@@ -3958,11 +3978,12 @@ function selectPreset(id){
   lastResult=null;document.getElementById('addMealBtn').disabled=true;
   updateRatio();
   if(p.servingG){showPortionRow(p.servingG);}else{hidePortionRow();queryValueEl.value='';clearResults();}
+  updateSaveCurrentButtonLabel();
   renderPresets();
 }
 function deleteCustom(id){
   saveCustom(loadCustom().filter(c=>c.id!==id));
-  if(activeId===id){activeId=null;['kcalPer100','rawRef','cookedRef','protRef','carbRef','fatRef'].forEach(i=>document.getElementById(i).value='');}
+  if(activeId===id){activeId=null;['kcalPer100','rawRef','cookedRef','protRef','carbRef','fatRef'].forEach(i=>document.getElementById(i).value='');resetSaveCurrentButton();}
   updateRatio();clearResults();renderPresets();
 }
 
@@ -4089,11 +4110,13 @@ document.getElementById('cancelScanBtn').addEventListener('click', closeScannerM
 document.getElementById('createPresetBtn').addEventListener('click',()=>{
   isCreatingNew=true;
   activeId=null;
+  editingPresetId=null;
   ['kcalPer100','rawRef','cookedRef','protRef','carbRef','fatRef','queryValue'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('filledKcalTag').innerHTML='';
   document.getElementById('filledMacroTag').innerHTML='';
   hidePortionRow();clearResults();lastResult=null;
   document.getElementById('addMealBtn').disabled=true;
+  resetSaveCurrentButton();
   updateRatio();
   if(presetSelectedDisplay) presetSelectedDisplay.style.display='none';
   if(presetSearchInput) presetSearchInput.value='';
@@ -4224,8 +4247,7 @@ document.getElementById('saveCurrentBtn').addEventListener('click',()=>{
     arr.push({id,name:pendingNewName,emoji:pendingNewEmoji||'⭐',kcal:k,p:!isNaN(p)?p:null,c:!isNaN(gc)?gc:null,f:!isNaN(f)?f:null,rawRef:r||100,cookedRef:c||100,group:'Mes aliments',servingG:currentServingG||null});
     saveCustom(arr);activeId=id;
     isCreatingNew=false;
-    const btn=document.getElementById('saveCurrentBtn');
-    btn.textContent='+ Sauvegarder aliment';btn.style.background='';
+    resetSaveCurrentButton();
     document.getElementById('filledKcalTag').innerHTML='';document.getElementById('filledMacroTag').innerHTML='';
     if(presetSelectedDisplay){
       document.getElementById('presetSelectedLabel').textContent='Sélectionné :';
@@ -4234,6 +4256,45 @@ document.getElementById('saveCurrentBtn').addEventListener('click',()=>{
     }
     pendingNewName='';pendingNewEmoji='';
     renderPresets();
+    return;
+  }
+
+  const selectedCustom=selectedCustomPreset();
+  if(selectedCustom && !editingPresetId){
+    if(selectedCustom.fixed){
+      openEditPreset(selectedCustom.id);
+      return;
+    }
+    if(!k||(cookMode==='cooked'&&(!r||!c))){
+      document.getElementById('errorMsg').textContent="Remplis d'abord les champs de référence.";
+      return;
+    }
+    const arr=loadCustom();
+    const idx=arr.findIndex(x=>x.id===selectedCustom.id);
+    if(idx<0){resetSaveCurrentButton();return;}
+    const p=parseFloat(document.getElementById('protRef').value);
+    const gc=parseFloat(document.getElementById('carbRef').value);
+    const f=parseFloat(document.getElementById('fatRef').value);
+    arr[idx]={
+      ...arr[idx],
+      kcal:k,
+      p:!isNaN(p)?p:null,
+      c:!isNaN(gc)?gc:null,
+      f:!isNaN(f)?f:null,
+      rawRef:r||100,
+      cookedRef:c||100,
+      servingG:currentServingG||arr[idx].servingG||null,
+      fixed:false
+    };
+    saveCustom(arr);
+    document.getElementById('filledKcalTag').innerHTML='';
+    document.getElementById('filledMacroTag').innerHTML='';
+    renderPresets();
+    updateSaveCurrentButtonLabel();
+    const btn=document.getElementById('saveCurrentBtn');
+    const txt=btn.textContent;
+    btn.textContent='Aliment mis à jour';
+    setTimeout(()=>{btn.textContent=txt;updateSaveCurrentButtonLabel();},1000);
     return;
   }
 
@@ -5233,6 +5294,7 @@ presetSearchInput.addEventListener('keydown',e=>{
 });
 document.getElementById('presetClearBtn').addEventListener('click',()=>{
   activeId=null;
+  editingPresetId=null;
   presetSelectedDisplay.style.display='none';
   document.getElementById('presetSelectedLabel').textContent='Sélectionné :';
   presetSearchInput.value='';
@@ -5241,16 +5303,17 @@ document.getElementById('presetClearBtn').addEventListener('click',()=>{
   ['kcalPer100','rawRef','cookedRef','protRef','carbRef','fatRef'].forEach(id=>document.getElementById(id).value='');
   // Annule aussi la création en cours
   isCreatingNew=false;pendingNewName='';pendingNewEmoji='';
-  const sBtn=document.getElementById('saveCurrentBtn');
-  sBtn.textContent='+ Sauvegarder aliment';sBtn.style.background='';
+  resetSaveCurrentButton();
   updateRatio();
 });
 // override clearPresetBtn to also reset combobox display
 document.getElementById('clearPresetBtn').addEventListener('click',()=>{
   activeId=null;
+  editingPresetId=null;
   presetSelectedDisplay.style.display='none';
   presetSearchInput.value='';
   hidePortionRow();queryValueEl.value='';clearResults();lastResult=null;document.getElementById('addMealBtn').disabled=true;
+  resetSaveCurrentButton();
 });
 
 // ═══════════════════════════════════════════
