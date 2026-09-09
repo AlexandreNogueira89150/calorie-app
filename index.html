@@ -1580,6 +1580,7 @@ body{
     <button class="date-nav-btn" id="datePrev">‹</button>
     <span class="date-label today" id="dateLabel">Aujourd'hui</span>
     <button class="date-nav-btn" id="dateNext" disabled>›</button>
+    <button class="date-action-btn" id="swapMealsBtn">⇄ Inverser</button>
     <button class="date-action-btn" id="dupDayBtn">⧉ Dupliquer</button>
     <button class="date-action-btn danger" id="clearDayBtn">Vider</button>
   </div>
@@ -1599,6 +1600,8 @@ body{
 
   <div style="display:flex;gap:8px;margin-bottom:12px;">
     <button class="btn-ghost" style="flex:1;font-size:11px;" id="saveMealBtn">+ Sauvegarder ce repas</button>
+    <button class="btn-ghost" style="flex:1;font-size:11px;" id="addDefaultsBtn">+ Défauts</button>
+    <button class="btn-ghost" style="flex:1;font-size:11px;" id="setDefaultsBtn">Définir défaut</button>
     <button class="btn-ghost" style="flex:1;font-size:11px;" id="balanceMealBtn">⚖ Équilibrer</button>
   </div>
 
@@ -2055,6 +2058,34 @@ body{
   </div>
 </div>
 
+<!-- MODAL: SWAP MEALS -->
+<div class="modal-overlay" id="modalSwapMeals">
+  <div class="modal">
+    <h3>Inverser deux repas</h3>
+    <div id="swapMealsInfo" style="font-size:11px;color:var(--text-muted);margin-bottom:14px;"></div>
+    <div class="field"><label>Premier repas</label>
+      <select id="swapMealA" class="itxt" style="font-size:13px;cursor:pointer;">
+        <option value="breakfast">Petit-déj</option>
+        <option value="lunch">Déjeuner</option>
+        <option value="dinner">Dîner</option>
+        <option value="snack">Collation</option>
+      </select>
+    </div>
+    <div class="field" style="margin-top:10px;"><label>Deuxième repas</label>
+      <select id="swapMealB" class="itxt" style="font-size:13px;cursor:pointer;">
+        <option value="breakfast">Petit-déj</option>
+        <option value="lunch">Déjeuner</option>
+        <option value="dinner">Dîner</option>
+        <option value="snack">Collation</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-primary" id="confirmSwapMeals">Inverser</button>
+      <button class="btn-secondary" id="cancelSwapMeals">Annuler</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: DUPLICATE MEAL -->
 <div class="modal-overlay" id="modalDupMeal">
   <div class="modal">
@@ -2221,6 +2252,7 @@ const FS_SHARED = {
 const FS_PERSONAL = {
   mealsHistory:  { lsKey:'calorieMealsHistory_v1',  field:'data',  defaultVal:{} },
   profil:        { lsKey:'calorieProfilV1',         field:'data',  defaultVal:{} },
+  defaultMeals:  { lsKey:'calorieDefaultMeals_v1',  field:'data',  defaultVal:{breakfast:[],lunch:[],dinner:[],snack:[]} },
 };
 // settings (goal) is personal, handled separately
 
@@ -2768,6 +2800,7 @@ const LS_CUSTOM='calorieCustomPresets_v2';
 const LS_MEALS='calorieMealsHistory_v1'; // {date: {breakfast:[],lunch:[],dinner:[],snack:[]}}
 const LS_RECIPES='calorieRecipes_v1';
 const LS_GOAL='calorieGoal';
+const LS_DEFAULT_MEALS='calorieDefaultMeals_v1';
 
 const loadCustom=()=>{try{return JSON.parse(localStorage.getItem(LS_CUSTOM)||'[]');}catch{return[];}};
 const saveCustom=a=>{localStorage.setItem(LS_CUSTOM,JSON.stringify(a));syncPushKey('customPresets');};
@@ -2833,6 +2866,12 @@ const MEAL_TYPES=['breakfast','lunch','dinner','snack'];
 const MEAL_LABELS={breakfast:'Petit-déj',lunch:'Déjeuner',dinner:'Dîner',snack:'Collation'};
 
 function todayKey(){return new Date().toISOString().slice(0,10);}
+function addDaysKey(dateKey,days){
+  const d=new Date(dateKey+'T12:00:00');
+  d.setDate(d.getDate()+days);
+  return d.toISOString().slice(0,10);
+}
+function tomorrowKey(){return addDaysKey(todayKey(),1);}
 function fmtDateKey(k){
   const d=new Date(k+'T12:00:00');
   return d.toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'});
@@ -2840,10 +2879,17 @@ function fmtDateKey(k){
 
 function loadHistory(){try{return JSON.parse(localStorage.getItem(LS_MEALS)||'{}');}catch{return{};}}
 function saveHistory(h){localStorage.setItem(LS_MEALS,JSON.stringify(h));syncPushKey('mealsHistory');}
+function emptyMealBuckets(){return {breakfast:[],lunch:[],dinner:[],snack:[]};}
+function loadDefaultMeals(){
+  try{return {...emptyMealBuckets(),...JSON.parse(localStorage.getItem(LS_DEFAULT_MEALS)||'{}')};}
+  catch{return emptyMealBuckets();}
+}
+function saveDefaultMeals(data){localStorage.setItem(LS_DEFAULT_MEALS,JSON.stringify({...emptyMealBuckets(),...data}));syncPushKey('defaultMeals');}
+function copyMealItem(item){return {...JSON.parse(JSON.stringify(item)),id:Date.now()+Math.random()};}
 
 function getDayData(dateKey){
   const h=loadHistory();
-  if(!h[dateKey])h[dateKey]={breakfast:[],lunch:[],dinner:[],snack:[]};
+  if(!h[dateKey])h[dateKey]=emptyMealBuckets();
   MEAL_TYPES.forEach(t=>{if(!h[dateKey][t])h[dateKey][t]=[];});
   return h[dateKey];
 }
@@ -2880,8 +2926,8 @@ function weekBounds(dateKey){
   start.setDate(start.getDate()-day+1);
   const end=new Date(start);
   end.setDate(start.getDate()+6);
-  const today=new Date(todayKey()+'T12:00:00');
-  if(end>today)end.setTime(today.getTime());
+  const maxDay=new Date(tomorrowKey()+'T12:00:00');
+  if(end>maxDay)end.setTime(maxDay.getTime());
   return {start,end};
 }
 function formatDateKey(d){
@@ -3013,21 +3059,49 @@ function updateWeeklyDeficit(goal){
 // ═══════════════════════════════════════════
 function updateDateNav(){
   const isToday=viewDateKey===todayKey();
-  document.getElementById('dateNext').disabled=isToday;
+  const isTomorrow=viewDateKey===tomorrowKey();
+  document.getElementById('dateNext').disabled=isTomorrow;
   const lbl=document.getElementById('dateLabel');
   if(isToday){lbl.textContent='Aujourd\'hui';lbl.className='date-label today';}
+  else if(isTomorrow){lbl.textContent='Demain';lbl.className='date-label';}
   else{lbl.textContent=fmtDateKey(viewDateKey);lbl.className='date-label';}
 }
 function shiftDate(days){
-  const d=new Date(viewDateKey+'T12:00:00');
-  d.setDate(d.getDate()+days);
-  viewDateKey=d.toISOString().slice(0,10);
+  const nextKey=addDaysKey(viewDateKey,days);
+  if(nextKey>tomorrowKey())return;
+  viewDateKey=nextKey;
   updateDateNav();
   renderMealSection();
   updateGoalBanner();
 }
 document.getElementById('datePrev').addEventListener('click',()=>shiftDate(-1));
 document.getElementById('dateNext').addEventListener('click',()=>shiftDate(1));
+function openSwapMeals(){
+  const other=MEAL_TYPES.find(t=>t!==activeMealType) || 'lunch';
+  document.getElementById('swapMealsInfo').textContent=`Jour : ${fmtDateKey(viewDateKey)}`;
+  document.getElementById('swapMealA').value=activeMealType;
+  document.getElementById('swapMealB').value=other;
+  document.getElementById('modalSwapMeals').classList.add('open');
+}
+function closeSwapMeals(){document.getElementById('modalSwapMeals').classList.remove('open');}
+document.getElementById('swapMealsBtn').addEventListener('click',openSwapMeals);
+document.getElementById('confirmSwapMeals').addEventListener('click',()=>{
+  const a=document.getElementById('swapMealA').value;
+  const b=document.getElementById('swapMealB').value;
+  if(a===b){alert('Choisis deux repas différents.');return;}
+  const d=getDayData(viewDateKey);
+  const tmp=d[a]||[];
+  d[a]=d[b]||[];
+  d[b]=tmp;
+  setDayData(viewDateKey,d);
+  activeMealType=a;
+  document.querySelectorAll('.meal-type-tab').forEach(btn=>btn.classList.toggle('active',btn.dataset.mtype===activeMealType));
+  closeSwapMeals();
+  renderMealSection();
+  updateGoalBanner();
+});
+document.getElementById('cancelSwapMeals').addEventListener('click',closeSwapMeals);
+document.getElementById('modalSwapMeals').addEventListener('click',e=>{if(e.target===document.getElementById('modalSwapMeals'))closeSwapMeals();});
 document.getElementById('clearDayBtn').addEventListener('click',()=>{
   if(!confirm('Vider tous les repas de ce jour ?'))return;
   setDayData(viewDateKey,{breakfast:[],lunch:[],dinner:[],snack:[]});
@@ -3080,6 +3154,11 @@ function escapeHtml(value){
 }
 
 function shareItemQtyLabel(item){
+  if(item.qtyInputMode==='portions'&&item.portionSizeG){
+    const count=item.portionCount||1;
+    const modeLabel=item.qtyMode==='cooked'?'cuits':'';
+    return `${fmt(count,count%1?1:0)} × ${fmt(item.portionSizeG,0)}g${modeLabel?' '+modeLabel:''}`;
+  }
   if(item.fixed){
     const units=item.fixedUnits||1;
     return `${fmt(units,units%1?1:0)} ${item.fixedLabel||'portion'}${units>1&&!item.fixedLabel?'s':''}`;
@@ -3316,6 +3395,17 @@ async function rejectShareRequest(req){
 function mealItemDisplay(item){
   const isFixed=item.fixed===true;
   const qtyMode=item.qtyMode||'raw';
+  if(item.qtyInputMode==='portions'&&item.portionSizeG){
+    return {
+      isFixed:false,
+      qtyMode,
+      subLabel:qtyMode==='cooked'?'portions cuites':'portions',
+      value:item.portionCount||1,
+      unitLabel:'portion',
+      step:1,
+      display:shareItemQtyLabel(item)
+    };
+  }
   const subLabel=isFixed?(item.fixedLabel||'portion'):qtyMode==='cooked'?'cuit':qtyMode==='kcal'?'kcal visées':(item.noCook?'':'cru');
   if(isFixed){
     return {
@@ -3354,7 +3444,16 @@ function updateMealItemQuantity(idx,value){
     const oldRawG=Number(it.rawG)||0;
     const kpg100=it.kcalPer100!=null?it.kcalPer100/100:(oldRawG>0?it.kcal/oldRawG:0);
     let newRawG;
-    if(qtyMode==='cooked'&&it.ratio){newRawG=v/it.ratio;}
+    if(it.qtyInputMode==='portions'&&it.portionSizeG){
+      it.portionCount=v;
+      const totalQty=Math.round(it.portionSizeG*v*10)/10;
+      if(qtyMode==='cooked'&&it.ratio){
+        it.cookedG=totalQty;
+        newRawG=totalQty/it.ratio;
+      }else{
+        newRawG=totalQty;
+      }
+    }else if(qtyMode==='cooked'&&it.ratio){newRawG=v/it.ratio;}
     else if(qtyMode==='kcal'){newRawG=kpg100>0?v/kpg100:oldRawG;}
     else{newRawG=v;}
     it.rawG=Math.round(newRawG*10)/10;
@@ -3462,6 +3561,7 @@ function buildMealMobileCard(item,idx){
 function renderMealSection(){
   renderMealTypeBadges();
   refreshShareInbox();
+  refreshDefaultMealButtons();
   const data=getDayData(viewDateKey);
   const items=data[activeMealType];
   const container=document.getElementById('mealContent');
@@ -3496,69 +3596,24 @@ function renderMealSection(){
 
   items.forEach((item,idx)=>{
     const tr=document.createElement('tr');tr.className='fade-in';
-    const isFixed=item.fixed===true;
-    // kcal per unit: for fixed items = fixedKcal per portion; for normal = kcal/rawG
-    const kcalPerUnit = isFixed
-      ? (item.fixedKcalPerUnit || item.kcal) // fixedKcal stored at add time
-      : (item.rawG>0 ? item.kcal/item.rawG : 0);
+    const meta=mealItemDisplay(item);
 
     // name cell
     const nameTd=document.createElement('td');
-    const qtyMode = item.qtyMode || 'raw';
-    const subLabel = isFixed ? (item.fixedLabel||'portion') : qtyMode==='cooked' ? 'cuit' : qtyMode==='kcal' ? 'kcal visées' : (item.noCook?'':'cru');
-    nameTd.innerHTML=`<div class="meal-name-cell"><span class="meal-emoji">${item.emoji||''}</span><div><div class="meal-item-name">${item.name}</div><div class="meal-sub">${subLabel}</div></div></div>`;
+    nameTd.innerHTML=`<div class="meal-name-cell"><span class="meal-emoji">${escapeHtml(item.emoji||'')}</span><div><div class="meal-item-name">${escapeHtml(item.name||'Aliment')}</div><div class="meal-sub">${escapeHtml(meta.display+(meta.subLabel?' · '+meta.subLabel:''))}</div></div></div>`;
 
     // qty cell — inline editable
     const qtyTd=document.createElement('td');qtyTd.style.textAlign='center';
     const qtyIn=document.createElement('input');qtyIn.type='number';qtyIn.className='meal-qty-input';
-    qtyIn.min=1;qtyIn.step=1;
-
-    if(isFixed){
-      // Show units (1, 2, 3…)
-      qtyIn.value=item.fixedUnits||1;
-      qtyIn.addEventListener('change',()=>{
-        const v=parseFloat(qtyIn.value);if(!v||v<=0)return;
-        const d=getDayData(viewDateKey);
-        const it=d[activeMealType][idx];
-        it.fixedUnits=v;
-        it.kcal=Math.round(v*(it.fixedKcalPerUnit||it.kcal)*10)/10;
-        if(it.fixedPPerUnit!=null) it.p=Math.round(v*it.fixedPPerUnit*100)/100;
-        if(it.fixedCPerUnit!=null) it.c=Math.round(v*it.fixedCPerUnit*100)/100;
-        if(it.fixedFPerUnit!=null) it.f=Math.round(v*it.fixedFPerUnit*100)/100;
-        setDayData(viewDateKey,d);renderMealSection();updateGoalBanner();
-      });
-      const unitSpan=document.createElement('span');
-      const ul=item.fixedLabel||'×';
-      unitSpan.textContent=ul.length>6?'×':ul;
-      unitSpan.style.cssText='font-size:9px;color:var(--text-dim);margin-left:3px;';
-      qtyTd.appendChild(qtyIn);qtyTd.appendChild(unitSpan);
-        } else {
-      // Champ affiché/édité = mode utilisé à l'ajout (poids cru / poids cuit / kcal visées)
-      const kpg100 = item.kcalPer100!=null ? item.kcalPer100/100 : kcalPerUnit;
-      let displayVal,unitLabel;
-      if(qtyMode==='cooked'&&item.cookedG!=null){displayVal=item.cookedG;unitLabel='g';}
-      else if(qtyMode==='kcal'){displayVal=item.kcal;unitLabel='kcal';}
-      else{displayVal=item.rawG;unitLabel='g';}
-      qtyIn.value=unitLabel==='kcal'?Math.round(displayVal):Math.round(displayVal*10)/10;
-      qtyIn.addEventListener('change',()=>{
-        const v=parseFloat(qtyIn.value);if(!v||v<=0)return;
-        const d=getDayData(viewDateKey);
-        const it=d[activeMealType][idx];
-        let newRawG;
-        if(qtyMode==='cooked'&&item.ratio){newRawG=v/item.ratio;}
-        else if(qtyMode==='kcal'){newRawG=kpg100>0?v/kpg100:item.rawG;}
-        else{newRawG=v;}
-        it.rawG=Math.round(newRawG*10)/10;
-        it.kcal=qtyMode==='kcal'?Math.round(v*10)/10:Math.round(newRawG*kpg100*10)/10;
-        if(item.ratio) it.cookedG=Math.round(newRawG*item.ratio*10)/10;
-        if(item.p!=null) it.p=Math.round(item.p/item.rawG*newRawG*100)/100;
-        if(item.c!=null) it.c=Math.round(item.c/item.rawG*newRawG*100)/100;
-        if(item.f!=null) it.f=Math.round(item.f/item.rawG*newRawG*100)/100;
-        setDayData(viewDateKey,d);renderMealSection();updateGoalBanner();
-      });
-      const unitSpan=document.createElement('span');unitSpan.textContent=unitLabel;unitSpan.style.cssText='font-size:9px;color:var(--text-dim);margin-left:3px;';
-      qtyTd.appendChild(qtyIn);qtyTd.appendChild(unitSpan);
-    }
+    qtyIn.min=meta.unitLabel==='kcal'?25:1;
+    qtyIn.step=meta.step;
+    qtyIn.value=meta.unitLabel==='kcal'?Math.round(meta.value):Math.round(meta.value*10)/10;
+    qtyIn.addEventListener('change',()=>updateMealItemQuantity(idx,qtyIn.value));
+    const unitSpan=document.createElement('span');
+    const label=meta.unitLabel==='portion'?'×':meta.unitLabel;
+    unitSpan.textContent=label.length>6?'×':label;
+    unitSpan.style.cssText='font-size:9px;color:var(--text-dim);margin-left:3px;';
+    qtyTd.appendChild(qtyIn);qtyTd.appendChild(unitSpan);
 
         const kcalTd=document.createElement('td');kcalTd.className='kv';kcalTd.textContent=fmt(item.kcal,0);
     const pTd=document.createElement('td');pTd.className='pv';pTd.textContent=item.p!=null?fmt(item.p):'—';
@@ -3632,7 +3687,7 @@ document.getElementById('addMealBtn').addEventListener('click',e=>{
   if(!lastResult)return;
   const mtype=document.getElementById('addMealTypeSelect').value;
   const d=getDayData(viewDateKey);
-  d[mtype].push({...lastResult,id:Date.now()});
+  d[mtype].push(copyMealItem(lastResult));
   setDayData(viewDateKey,d);
   activeMealType=mtype;
   document.querySelectorAll('.meal-type-tab').forEach(b=>b.classList.toggle('active',b.dataset.mtype===mtype));
@@ -3743,6 +3798,19 @@ function updateCalcPortionPreview(){
 }
 document.getElementById('calcPortionSize').addEventListener('input',updateCalcPortionPreview);
 document.getElementById('calcPortionCount').addEventListener('input',updateCalcPortionPreview);
+
+function currentCalcPortionMeta(){
+  if(calcQtyMode==='portions'){
+    const size=parseFloat(document.getElementById('calcPortionSize').value);
+    const count=parseFloat(document.getElementById('calcPortionCount').value)||1;
+    if(size>0)return {qtyInputMode:'portions',portionSizeG:Math.round(size*10)/10,portionCount:Math.round(count*10)/10};
+  }
+  if(currentServingG&&document.getElementById('portionRow').style.display!=='none'){
+    const count=parseFloat(portionCountEl.value)||1;
+    return {qtyInputMode:'portions',portionSizeG:Math.round(currentServingG*10)/10,portionCount:Math.round(count*10)/10};
+  }
+  return {};
+}
 
 // ═══════════════════════════════════════════
 // OFF SEARCH
@@ -4138,7 +4206,7 @@ function calculate(){
   else{mpEl.textContent='—';mpEl.className='macro-val';mcEl.textContent='—';mcEl.className='macro-val';mfEl.textContent='—';mfEl.className='macro-val';}
   ['r1value','r2value','r3value','r4value'].forEach(popEl);
   const preset=allPresets().find(x=>x.id===activeId);
-  lastResult={name:preset?preset.name:(document.getElementById('newFoodName').value||'Aliment'),emoji:preset?preset.emoji:'',rawG,cookedG,kcal:totalK,p:totP,c:totC,f:totF,noCook:cookMode==='raw',qtyMode:mode,kcalPer100:k,ratio};
+  lastResult={name:preset?preset.name:(document.getElementById('newFoodName').value||'Aliment'),emoji:preset?preset.emoji:'',rawG,cookedG,kcal:totalK,p:totP,c:totC,f:totF,noCook:cookMode==='raw',qtyMode:mode,kcalPer100:k,ratio,...currentCalcPortionMeta()};
   document.getElementById('addMealBtn').disabled=false;
 }
 
@@ -5192,6 +5260,51 @@ const LS_SAVED_MEALS = 'calorieSavedMeals_v1';
 const loadSavedMeals = ()=>{try{return JSON.parse(localStorage.getItem(LS_SAVED_MEALS)||'[]');}catch{return[];}};
 const saveSavedMeals = a=>{localStorage.setItem(LS_SAVED_MEALS,JSON.stringify(a));syncPushKey('savedMeals');};
 
+function defaultItemsForActiveMeal(){
+  return loadDefaultMeals()[activeMealType] || [];
+}
+function refreshDefaultMealButtons(){
+  const addBtn=document.getElementById('addDefaultsBtn');
+  const setBtn=document.getElementById('setDefaultsBtn');
+  if(!addBtn||!setBtn)return;
+  const defaults=defaultItemsForActiveMeal();
+  addBtn.disabled=defaults.length===0;
+  addBtn.textContent=defaults.length?`+ Défauts (${defaults.length})`:'+ Défauts';
+  setBtn.textContent='Définir défaut';
+}
+function addDefaultMealItems(){
+  const defaults=defaultItemsForActiveMeal();
+  if(!defaults.length){alert('Aucun aliment par défaut pour ce repas.');return;}
+  const d=getDayData(viewDateKey);
+  if(!d[activeMealType])d[activeMealType]=[];
+  defaults.forEach(item=>d[activeMealType].push(copyMealItem(item)));
+  setDayData(viewDateKey,d);
+  renderMealSection();
+  updateGoalBanner();
+}
+function setDefaultMealItems(){
+  const d=getDayData(viewDateKey);
+  const items=d[activeMealType]||[];
+  const defaults=loadDefaultMeals();
+  if(!items.length){
+    if(!(defaults[activeMealType]||[]).length){alert('Le repas est vide.');return;}
+    if(!confirm(`Supprimer les aliments par défaut pour ${MEAL_LABELS[activeMealType]} ?`))return;
+    defaults[activeMealType]=[];
+    saveDefaultMeals(defaults);
+    refreshDefaultMealButtons();
+    return;
+  }
+  defaults[activeMealType]=items.map(cloneMealForShare);
+  saveDefaultMeals(defaults);
+  refreshDefaultMealButtons();
+  const btn=document.getElementById('setDefaultsBtn');
+  const original=btn.textContent;
+  btn.textContent='Défaut enregistré';
+  setTimeout(()=>{btn.textContent=original;refreshDefaultMealButtons();},1000);
+}
+document.getElementById('addDefaultsBtn').addEventListener('click',addDefaultMealItems);
+document.getElementById('setDefaultsBtn').addEventListener('click',setDefaultMealItems);
+
 // Save current meal type
 document.getElementById('saveMealBtn').addEventListener('click',()=>{
   const data = getDayData(viewDateKey);
@@ -5243,7 +5356,7 @@ function openSavedMeals(){
       btn.addEventListener('click',()=>{
         const sm=arr[parseInt(btn.dataset.idx)];
         const d=getDayData(viewDateKey);
-        sm.items.forEach(item=>d[activeMealType].push({...item,id:Date.now()+Math.random()}));
+        sm.items.forEach(item=>d[activeMealType].push(copyMealItem(item)));
         setDayData(viewDateKey,d);renderMealSection();updateGoalBanner();
         document.getElementById('modalLoadMeal').classList.remove('open');
       });
@@ -5252,7 +5365,7 @@ function openSavedMeals(){
       btn.addEventListener('click',()=>{
         const sm=arr[parseInt(btn.dataset.idx)];
         const d=getDayData(viewDateKey);
-        d[activeMealType]=sm.items.map(item=>({...item,id:Date.now()+Math.random()}));
+        d[activeMealType]=sm.items.map(copyMealItem);
         setDayData(viewDateKey,d);renderMealSection();updateGoalBanner();
         document.getElementById('modalLoadMeal').classList.remove('open');
       });
@@ -5289,7 +5402,7 @@ document.getElementById('confirmDupMeal').addEventListener('click',()=>{
   if(!targetDate)return;
   const src=getDayData(viewDateKey)[dupMealSourceType];
   const d=getDayData(targetDate);
-  src.forEach(item=>d[targetType].push({...item,id:Date.now()+Math.random()}));
+  src.forEach(item=>d[targetType].push(copyMealItem(item)));
   setDayData(targetDate,d);
   document.getElementById('modalDupMeal').classList.remove('open');
   if(targetDate===viewDateKey){activeMealType=targetType;document.querySelectorAll('.meal-type-tab').forEach(b=>b.classList.toggle('active',b.dataset.mtype===targetType));renderMealSection();updateGoalBanner();}
@@ -5314,7 +5427,7 @@ document.getElementById('confirmDupDay').addEventListener('click',()=>{
   if(!targetDate||targetDate===viewDateKey){alert('Choisis un jour différent.');return;}
   const srcData=getDayData(viewDateKey);
   const copy={};
-  MEAL_TYPES.forEach(t=>{copy[t]=srcData[t].map(item=>({...item,id:Date.now()+Math.random()}));});
+  MEAL_TYPES.forEach(t=>{copy[t]=srcData[t].map(copyMealItem);});
   setDayData(targetDate,copy);
   document.getElementById('modalDupDay').classList.remove('open');
   // navigate to target day
