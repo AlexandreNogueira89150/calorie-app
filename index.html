@@ -537,6 +537,51 @@ body{
 .date-action-btn.danger:hover{border-color:var(--red);color:var(--red);}
 .date-action-btn.primary{border-color:var(--accent);color:var(--accent);background:var(--accent-light);}
 .date-action-btn[hidden]{display:none;}
+@media(max-width:767px){
+  .date-nav{
+    display:grid;
+    grid-template-columns:48px minmax(0,1fr) minmax(0,1fr) 48px;
+    gap:8px;
+    align-items:stretch;
+  }
+  #datePrev{grid-column:1;grid-row:1;}
+  #dateNext{grid-column:4;grid-row:1;}
+  .date-nav-btn{
+    width:100%;
+    height:48px;
+    min-width:48px;
+    font-size:24px;
+  }
+  .date-label{
+    grid-column:2 / 4;
+    grid-row:1;
+    min-height:48px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:0 8px;
+    border:1.5px solid var(--border);
+    border-radius:var(--radius-sm);
+    background:var(--surface);
+    box-shadow:var(--shadow);
+    line-height:1.2;
+  }
+  .date-action-btn{
+    width:100%;
+    min-height:42px;
+    padding:8px 6px;
+    font-size:11px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  #dateTodayBtn{grid-column:1 / 3;grid-row:2;}
+  #swapMealsBtn{grid-column:3 / 5;grid-row:2;}
+  #dupDayBtn{grid-column:1 / 3;grid-row:3;}
+  #clearDayBtn{grid-column:3 / 5;grid-row:3;}
+  .date-nav:not(.has-today-shortcut) #swapMealsBtn{grid-column:1 / 3;grid-row:2;}
+  .date-nav:not(.has-today-shortcut) #dupDayBtn{grid-column:3 / 5;grid-row:2;}
+  .date-nav:not(.has-today-shortcut) #clearDayBtn{grid-column:1 / 5;grid-row:3;}
+}
 
 .meal-date-warning{
   display:none;
@@ -3166,6 +3211,8 @@ function updateGoalNutrient(prefix,consumed,target,unit,decimals){
 function updateDateNav(){
   const isToday=viewDateKey===todayKey();
   const isTomorrow=viewDateKey===tomorrowKey();
+  const dateNav=document.querySelector('.date-nav');
+  if(dateNav)dateNav.classList.toggle('has-today-shortcut',!isToday);
   document.getElementById('dateNext').disabled=isTomorrow;
   const todayBtn=document.getElementById('dateTodayBtn');
   if(todayBtn)todayBtn.hidden=isToday;
