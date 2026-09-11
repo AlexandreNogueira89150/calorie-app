@@ -607,6 +607,37 @@ body{
 }
 .recipe-date-warning.visible{display:block;margin-bottom:10px;}
 
+.ideas-form{display:flex;gap:8px;align-items:flex-start;margin-bottom:12px;}
+.ideas-form textarea{min-height:72px;resize:vertical;}
+.ideas-list{display:flex;flex-direction:column;gap:8px;}
+.idea-card{
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  padding:10px 12px;
+}
+.idea-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:6px;}
+.idea-text{font-size:13px;color:var(--text);line-height:1.35;white-space:pre-wrap;}
+.idea-meta{font-size:10px;color:var(--text-dim);margin-top:4px;}
+.idea-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:8px;}
+.idea-vote-btn,.idea-status-select,.idea-delete-btn{
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  background:var(--surface);
+  color:var(--text-muted);
+  font-family:'Inter',sans-serif;
+  font-size:11px;
+  font-weight:600;
+  padding:6px 8px;
+  cursor:pointer;
+}
+.idea-vote-btn.voted{border-color:var(--accent);color:var(--accent);background:var(--accent-light);}
+.idea-delete-btn:hover{border-color:var(--red);color:var(--red);}
+@media(max-width:520px){
+  .ideas-form{flex-direction:column;}
+  .ideas-form .btn-accent{width:100%;}
+}
+
 /* ── MEAL TYPE TABS ── */
 .meal-type-tabs{
   display:grid;grid-template-columns:repeat(4,1fr);
@@ -2038,6 +2069,19 @@ body{
     <div id="familyAdminStatus" style="font-size:12px;color:var(--text-muted);margin-top:8px;min-height:18px;"></div>
   </div>
 
+  <!-- Boîte à idées -->
+  <div class="card">
+    <div class="card-title">Boîte à idées <span id="ideaCount" style="color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0;"></span></div>
+    <div class="ideas-form">
+      <textarea class="itxt" id="ideaInput" placeholder="Proposer une amélioration..." maxlength="500" style="flex:1;font-size:13px;"></textarea>
+      <button class="btn-accent" id="addIdeaBtn">Ajouter</button>
+    </div>
+    <div id="ideasStatus" style="font-size:12px;color:var(--text-muted);min-height:18px;margin-bottom:6px;"></div>
+    <div class="ideas-list" id="ideasList">
+      <div style="font-size:12px;color:var(--text-dim);">Chargement...</div>
+    </div>
+  </div>
+
   <!-- Inviter -->
   <div class="card">
     <div class="card-title">Inviter quelqu'un</div>
@@ -2365,6 +2409,7 @@ const FS_SHARED = {
   customPresets: { lsKey:'calorieCustomPresets_v2', field:'items', defaultVal:[] },
   recipes:       { lsKey:'calorieRecipes_v1',       field:'items', defaultVal:[] },
   savedMeals:    { lsKey:'calorieSavedMeals_v1',    field:'items', defaultVal:[] },
+  ideas:         { lsKey:'calorieIdeas_v1',         field:'items', defaultVal:[] },
 };
 const FS_PERSONAL = {
   mealsHistory:  { lsKey:'calorieMealsHistory_v1',  field:'data',  defaultVal:{} },
@@ -2918,6 +2963,7 @@ const LS_MEALS='calorieMealsHistory_v1'; // {date: {breakfast:[],lunch:[],dinner
 const LS_RECIPES='calorieRecipes_v1';
 const LS_GOAL='calorieGoal';
 const LS_DEFAULT_MEALS='calorieDefaultMeals_v1';
+const LS_IDEAS='calorieIdeas_v1';
 
 const loadCustom=()=>{try{return JSON.parse(localStorage.getItem(LS_CUSTOM)||'[]');}catch{return[];}};
 const saveCustom=a=>{localStorage.setItem(LS_CUSTOM,JSON.stringify(a));syncPushKey('customPresets');};
@@ -6173,6 +6219,172 @@ document.getElementById('balanceRecipeBtn').addEventListener('click',()=>{
 
 
 
+// ═══════════════════════════════════════════
+// IDEA BOX
+// ═══════════════════════════════════════════
+const IDEA_STATUSES={
+  new:'À étudier',
+  planned:'Prévu',
+  done:'Fait',
+  rejected:'Refusé'
+};
+
+function loadIdeasLocal(){
+  try{return JSON.parse(localStorage.getItem(LS_IDEAS)||'[]');}
+  catch{return[];}
+}
+
+async function loadIdeas(){
+  if(!currentFamilyId||!window.firebase)return loadIdeasLocal();
+  const { getDoc } = window.firebase;
+  const snap=await getDoc(sharedDocRef('ideas'));
+  const items=snap.exists() ? (snap.data().items||[]) : [];
+  localStorage.setItem(LS_IDEAS,JSON.stringify(items));
+  return items;
+}
+
+async function saveIdeas(items){
+  localStorage.setItem(LS_IDEAS,JSON.stringify(items));
+  if(!currentFamilyId||!window.firebase)return;
+  const { setDoc } = window.firebase;
+  await setDoc(sharedDocRef('ideas'),{items},{merge:true});
+}
+
+function ideaAuthorLabel(idea){
+  return idea.authorName || memberName(idea.authorUid);
+}
+
+function ideaDateLabel(iso){
+  if(!iso)return '';
+  try{return fmtDateKey(iso.slice(0,10));}
+  catch{return '';}
+}
+
+function canEditIdea(idea){
+  return !!currentUser && (idea.authorUid===currentUser.uid || isFamilyOwner);
+}
+
+async function renderIdeas(){
+  const list=document.getElementById('ideasList');
+  const countEl=document.getElementById('ideaCount');
+  const status=document.getElementById('ideasStatus');
+  if(!list)return;
+  try{
+    const ideas=(await loadIdeas()).sort((a,b)=>{
+      const order={new:0,planned:1,done:2,rejected:3};
+      const statusDiff=(order[a.status||'new']??0)-(order[b.status||'new']??0);
+      return statusDiff || (b.createdAt||'').localeCompare(a.createdAt||'');
+    });
+    if(countEl)countEl.textContent=ideas.length?`(${ideas.length})`:'';
+    if(status)status.textContent='';
+    list.innerHTML='';
+    if(!ideas.length){
+      list.innerHTML='<div style="font-size:12px;color:var(--text-dim);text-align:center;padding:14px;">Aucune idée pour le moment.</div>';
+      return;
+    }
+    ideas.forEach(idea=>{
+      const votes=Array.isArray(idea.votes)?idea.votes:[];
+      const voted=!!currentUser&&votes.includes(currentUser.uid);
+      const statusOptions=Object.entries(IDEA_STATUSES).map(([value,label])=>
+        `<option value="${value}" ${value===(idea.status||'new')?'selected':''}>${label}</option>`
+      ).join('');
+      const row=document.createElement('div');
+      row.className='idea-card';
+      row.innerHTML=`
+        <div class="idea-head">
+          <div style="min-width:0;">
+            <div class="idea-text">${escapeHtml(idea.text)}</div>
+            <div class="idea-meta">${escapeHtml(ideaAuthorLabel(idea))}${idea.createdAt?' · '+escapeHtml(ideaDateLabel(idea.createdAt)):''}</div>
+          </div>
+          <div style="font-size:11px;font-weight:700;color:var(--accent);white-space:nowrap;">${escapeHtml(IDEA_STATUSES[idea.status||'new']||IDEA_STATUSES.new)}</div>
+        </div>
+        <div class="idea-actions">
+          <button class="idea-vote-btn ${voted?'voted':''}" data-action="vote" data-id="${idea.id}">+1 · ${votes.length}</button>
+          ${isFamilyOwner?`<select class="idea-status-select" data-action="status" data-id="${idea.id}">${statusOptions}</select>`:''}
+          ${canEditIdea(idea)?`<button class="idea-delete-btn" data-action="delete" data-id="${idea.id}">Supprimer</button>`:''}
+        </div>`;
+      list.appendChild(row);
+    });
+  }catch(e){
+    console.error('[ideas] render',e);
+    if(status){status.style.color='var(--red)';status.textContent='Impossible de charger les idées.';}
+  }
+}
+
+async function addIdea(){
+  const input=document.getElementById('ideaInput');
+  const status=document.getElementById('ideasStatus');
+  const text=input.value.trim();
+  if(!text){input.focus();return;}
+  if(!currentUser)return;
+  try{
+    if(status){status.style.color='var(--text-muted)';status.innerHTML='<span class="spinner"></span>Ajout...';}
+    const ideas=await loadIdeas();
+    ideas.push({
+      id:'idea_'+Date.now(),
+      text,
+      status:'new',
+      votes:[],
+      authorUid:currentUser.uid,
+      authorName:currentUser.displayName || currentUser.email?.split('@')[0] || 'Membre',
+      createdAt:new Date().toISOString(),
+      updatedAt:new Date().toISOString()
+    });
+    await saveIdeas(ideas);
+    input.value='';
+    if(status){status.style.color='var(--green)';status.textContent='Idée ajoutée.';}
+    renderIdeas();
+  }catch(e){
+    console.error('[ideas] add',e);
+    if(status){status.style.color='var(--red)';status.textContent='Impossible d’ajouter l’idée.';}
+  }
+}
+
+async function updateIdea(id,updater){
+  const ideas=await loadIdeas();
+  const idx=ideas.findIndex(i=>i.id===id);
+  if(idx<0)return;
+  ideas[idx]={...ideas[idx],...updater(ideas[idx]),updatedAt:new Date().toISOString()};
+  await saveIdeas(ideas);
+  renderIdeas();
+}
+
+async function deleteIdea(id){
+  const ideas=await loadIdeas();
+  const idea=ideas.find(i=>i.id===id);
+  if(!idea||!canEditIdea(idea))return;
+  if(!confirm('Supprimer cette idée ?'))return;
+  await saveIdeas(ideas.filter(i=>i.id!==id));
+  renderIdeas();
+}
+
+function setupIdeasHandlers(){
+  const addBtn=document.getElementById('addIdeaBtn');
+  const input=document.getElementById('ideaInput');
+  const list=document.getElementById('ideasList');
+  if(addBtn)addBtn.addEventListener('click',addIdea);
+  if(input)input.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey))addIdea();});
+  if(list)list.addEventListener('click',async e=>{
+    const control=e.target.closest('[data-action]');
+    if(!control)return;
+    const id=control.dataset.id;
+    if(control.dataset.action==='vote'){
+      await updateIdea(id,idea=>{
+        const votes=Array.isArray(idea.votes)?idea.votes:[];
+        const has=currentUser&&votes.includes(currentUser.uid);
+        return {votes:has?votes.filter(uid=>uid!==currentUser.uid):[...votes,currentUser.uid]};
+      });
+    }else if(control.dataset.action==='delete'){
+      await deleteIdea(id);
+    }
+  });
+  if(list)list.addEventListener('change',async e=>{
+    const select=e.target.closest('[data-action="status"]');
+    if(!select||!isFamilyOwner)return;
+    await updateIdea(select.dataset.id,()=>({status:select.value}));
+  });
+}
+
 // ── Cache des membres (pour badges "ajouté par")
 // _membersCache declared at top of script
 async function loadMembersCache(){
@@ -6239,6 +6451,7 @@ async function refreshFamilyUI(){
     });
     document.getElementById('familyMemberCount').textContent = '('+count+')';
     renderFamilyAdminControls();
+    renderIdeas();
   }catch(e){console.error('[family] refreshUI',e);}
 }
 
@@ -6263,6 +6476,8 @@ function renderFamilyAdminControls(){
 }
 
 function setupFamilyHandlers(){
+  setupIdeasHandlers();
+
   document.getElementById('familyAdminSwitchBtn').addEventListener('click', async()=>{
     if(!isFamilyOwner){return;}
     const select=document.getElementById('familyAdminMemberSelect');
@@ -6391,6 +6606,142 @@ setTimeout(()=>{
     .catch(()=>{});
 }, 3000);
 
+// ── Notes de mise à jour non lues
+const RELEASE_NOTES_URL='update-notes.json';
+const RELEASE_NOTES_SEEN_KEY='calorieSeenReleaseNotes_v1';
+
+function loadSeenReleaseNoteIds(){
+  try{return new Set(JSON.parse(localStorage.getItem(RELEASE_NOTES_SEEN_KEY)||'[]'));}
+  catch{return new Set();}
+}
+
+function saveSeenReleaseNoteIds(ids){
+  localStorage.setItem(RELEASE_NOTES_SEEN_KEY,JSON.stringify([...ids]));
+}
+
+async function fetchReleaseNotes(){
+  try{
+    const res=await fetch(`${RELEASE_NOTES_URL}?t=${Date.now()}`,{cache:'no-store'});
+    if(!res.ok)return [];
+    const data=await res.json();
+    return Array.isArray(data)?data:(data.releases||[]);
+  }catch{
+    return [];
+  }
+}
+
+async function unreadReleaseNotes(){
+  const seen=loadSeenReleaseNoteIds();
+  const notes=await fetchReleaseNotes();
+  return notes.filter(n=>n&&n.id&&!seen.has(n.id));
+}
+
+function markReleaseNotesSeen(notes){
+  const seen=loadSeenReleaseNoteIds();
+  notes.forEach(n=>{if(n.id)seen.add(n.id);});
+  saveSeenReleaseNoteIds(seen);
+}
+
+function releaseNotesDetailsHtml(notes){
+  if(!notes.length)return '';
+  return notes.map(note=>`
+    <div style="padding:10px 0;border-top:1px solid var(--border);">
+      <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;">${escapeHtml(note.title||'Mise à jour')}${note.date?' · '+escapeHtml(note.date):''}</div>
+      <ul style="margin:0;padding-left:18px;color:var(--text-muted);font-size:12px;line-height:1.45;">
+        ${(note.changes||[]).map(change=>`<li>${escapeHtml(change)}</li>`).join('')}
+      </ul>
+    </div>`).join('');
+}
+
+function showReleaseNotesPopup({registration=null,updateAvailable=false,notes=[]}={}){
+  if(document.getElementById('updatePopup'))return;
+  if(!updateAvailable&&!notes.length)return;
+
+  const popup=document.createElement('div');
+  popup.id='updatePopup';
+  const detailsOpen=!updateAvailable&&notes.length;
+  popup.innerHTML=`
+    <div style="
+      position:fixed;
+      left:20px;
+      right:20px;
+      bottom:20px;
+      z-index:99999;
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:16px;
+      padding:18px;
+      box-shadow:var(--shadow-lg);
+      max-width:560px;
+      margin:0 auto;
+    ">
+      <div style="display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap;">
+        <div style="flex:1 1 220px;min-width:0;">
+          <div style="font-weight:700;margin-bottom:4px;">${updateAvailable?'Nouvelle version disponible':'Nouveautés'}</div>
+          <div style="color:var(--text-muted);font-size:13px;">
+            ${updateAvailable?'Une mise à jour de l’application est disponible.':'Changements récents de l’application.'}
+          </div>
+        </div>
+        ${notes.length?`<button id="showReleaseNotesBtn" style="
+          border:1px solid var(--border);
+          border-radius:10px;
+          padding:10px 12px;
+          background:var(--surface2);
+          color:var(--text);
+          font-weight:600;
+          cursor:pointer;
+          white-space:nowrap;
+        ">${detailsOpen?'Masquer':'Détails'}</button>`:''}
+        ${updateAvailable?`<button id="updateAppBtn" style="
+          border:0;
+          border-radius:10px;
+          padding:10px 15px;
+          background:var(--accent);
+          color:white;
+          font-weight:600;
+          cursor:pointer;
+          white-space:nowrap;
+        ">Mettre à jour</button>`:`<button id="closeReleaseNotesBtn" style="
+          border:0;
+          border-radius:10px;
+          padding:10px 15px;
+          background:var(--accent);
+          color:white;
+          font-weight:600;
+          cursor:pointer;
+          white-space:nowrap;
+        ">OK</button>`}
+      </div>
+      <div id="releaseNotesDetails" style="display:${detailsOpen?'block':'none'};margin-top:12px;max-height:260px;overflow:auto;">
+        ${releaseNotesDetailsHtml(notes)}
+      </div>
+    </div>`;
+  document.body.appendChild(popup);
+  if(detailsOpen)markReleaseNotesSeen(notes);
+
+  const detailsBtn=document.getElementById('showReleaseNotesBtn');
+  if(detailsBtn)detailsBtn.addEventListener('click',()=>{
+    const details=document.getElementById('releaseNotesDetails');
+    const open=details.style.display==='none';
+    details.style.display=open?'block':'none';
+    detailsBtn.textContent=open?'Masquer':'Détails';
+    if(open)markReleaseNotesSeen(notes);
+  });
+
+  const closeBtn=document.getElementById('closeReleaseNotesBtn');
+  if(closeBtn)closeBtn.addEventListener('click',()=>{
+    markReleaseNotesSeen(notes);
+    popup.remove();
+  });
+
+  const updateBtn=document.getElementById('updateAppBtn');
+  if(updateBtn)updateBtn.addEventListener('click',()=>{
+    if(registration&&registration.waiting){
+      registration.waiting.postMessage({type:'SKIP_WAITING'});
+    }
+  });
+}
+
 // ── PWA Service Worker + détection des mises à jour
 if('serviceWorker' in navigator){
 
@@ -6400,79 +6751,20 @@ if('serviceWorker' in navigator){
 
       const registration = await navigator.serviceWorker.register('sw.js');
 
-      // Affiche le popup de mise à jour
-      const showUpdatePopup = () => {
-
-        if(document.getElementById('updatePopup')) return;
-
-        const popup = document.createElement('div');
-
-        popup.id = 'updatePopup';
-
-        popup.innerHTML = `
-          <div style="
-            position:fixed;
-            left:20px;
-            right:20px;
-            bottom:20px;
-            z-index:99999;
-            background:var(--surface);
-            border:1px solid var(--border);
-            border-radius:16px;
-            padding:18px;
-            box-shadow:var(--shadow-lg);
-            display:flex;
-            align-items:center;
-            gap:15px;
-          ">
-            <div style="flex:1">
-              <div style="
-                font-weight:700;
-                margin-bottom:4px;
-              ">
-                Nouvelle version disponible
-              </div>
-
-              <div style="
-                color:var(--text-muted);
-                font-size:13px;
-              ">
-                Une mise à jour de l'application est disponible.
-              </div>
-            </div>
-
-            <button id="updateAppBtn" style="
-              border:0;
-              border-radius:10px;
-              padding:10px 15px;
-              background:var(--accent);
-              color:white;
-              font-weight:600;
-              cursor:pointer;
-              white-space:nowrap;
-            ">
-              Mettre à jour
-            </button>
-          </div>
-        `;
-
-        document.body.appendChild(popup);
-
-        document.getElementById('updateAppBtn').addEventListener('click', () => {
-
-          if(registration.waiting){
-            registration.waiting.postMessage({
-              type:'SKIP_WAITING'
-            });
-          }
-
+      const showUpdatePopup = async () => {
+        showReleaseNotesPopup({
+          registration,
+          updateAvailable:true,
+          notes:await unreadReleaseNotes()
         });
-
       };
 
       // Une mise à jour était déjà en attente
       if(registration.waiting){
         showUpdatePopup();
+      }else if(navigator.serviceWorker.controller){
+        const notes=await unreadReleaseNotes();
+        if(notes.length)showReleaseNotesPopup({notes});
       }
 
       // Une nouvelle version du SW vient d'être trouvée

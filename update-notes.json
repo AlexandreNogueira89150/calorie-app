@@ -1,0 +1,48 @@
+{
+  "releases": [
+    {
+      "id": "2026-09-11-ideas-and-update-notes",
+      "date": "2026-09-11",
+      "title": "Boîte à idées et détails des mises à jour",
+      "changes": [
+        "Ajout d'une boîte à idées partagée dans l'onglet Famille.",
+        "Chaque membre peut proposer une amélioration et voter pour les idées existantes.",
+        "L'administrateur peut changer le statut d'une idée : À étudier, Prévu, Fait ou Refusé.",
+        "Le message de mise à jour peut maintenant afficher le détail des améliorations.",
+        "Les changements non lus restent affichés tant qu'ils n'ont pas été consultés."
+      ]
+    },
+    {
+      "id": "2026-09-11-mobile-date-navigation",
+      "date": "2026-09-11",
+      "title": "Navigation mobile des repas",
+      "changes": [
+        "Amélioration de la barre de date sur téléphone.",
+        "Les boutons précédent et suivant sont plus grands.",
+        "Les actions Aujourd'hui, Inverser, Dupliquer et Vider ne débordent plus de l'écran."
+      ]
+    },
+    {
+      "id": "2026-09-11-dated-additions-and-user-foods",
+      "date": "2026-09-11",
+      "title": "Ajouts de repas plus lisibles",
+      "changes": [
+        "Ajout d'un bouton pour revenir rapidement à aujourd'hui.",
+        "Ajout d'un avertissement quand un aliment ou une recette est ajouté sur un autre jour.",
+        "Les aliments créés ou scannés par l'utilisateur sont prioritaires dans les recherches.",
+        "Le bouton d'ajout confirme maintenant clairement le repas cible."
+      ]
+    },
+    {
+      "id": "2026-09-09-profile-balances",
+      "date": "2026-09-09",
+      "title": "Bilans nutritionnels dans le profil",
+      "changes": [
+        "Ajout des bilans semaine, mois et année dans l'onglet Profil.",
+        "Les jours sans repas renseigné sont exclus des moyennes.",
+        "Le déficit ou surplus calorique est calculé par rapport au maintien.",
+        "Les objectifs de macros sont affichés sous forme de fourchettes."
+      ]
+    }
+  ]
+}
