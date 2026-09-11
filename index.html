@@ -535,6 +535,32 @@ body{
 }
 .date-action-btn:hover{border-color:var(--text-muted);color:var(--text);}
 .date-action-btn.danger:hover{border-color:var(--red);color:var(--red);}
+.date-action-btn.primary{border-color:var(--accent);color:var(--accent);background:var(--accent-light);}
+.date-action-btn[hidden]{display:none;}
+
+.meal-date-warning{
+  display:none;
+  margin-top:8px;
+  padding:8px 10px;
+  border:1px solid var(--orange);
+  border-radius:var(--radius-sm);
+  background:var(--orange-light);
+  color:var(--orange);
+  font-size:11px;
+  font-weight:600;
+}
+.meal-date-warning.visible{display:block;}
+.recipe-date-warning{
+  display:none;
+  width:100%;
+  padding:6px 8px;
+  border-radius:var(--radius-sm);
+  background:var(--orange-light);
+  color:var(--orange);
+  font-size:10px;
+  font-weight:600;
+}
+.recipe-date-warning.visible{display:block;margin-bottom:10px;}
 
 /* ── MEAL TYPE TABS ── */
 .meal-type-tabs{
@@ -1542,6 +1568,7 @@ body{
           <option value="snack">🍎 Collation</option>
         </select>
       </div>
+      <div class="meal-date-warning" id="addMealDateWarning"></div>
 
       <!-- Bottom actions -->
       <div class="bottom-actions">
@@ -1617,6 +1644,7 @@ body{
     <button class="date-nav-btn" id="datePrev">‹</button>
     <span class="date-label today" id="dateLabel">Aujourd'hui</span>
     <button class="date-nav-btn" id="dateNext" disabled>›</button>
+    <button class="date-action-btn primary" id="dateTodayBtn" hidden>Aujourd'hui</button>
     <button class="date-action-btn" id="swapMealsBtn">⇄ Inverser</button>
     <button class="date-action-btn" id="dupDayBtn">⧉ Dupliquer</button>
     <button class="date-action-btn danger" id="clearDayBtn">Vider</button>
@@ -2848,7 +2876,7 @@ const LS_DEFAULT_MEALS='calorieDefaultMeals_v1';
 
 const loadCustom=()=>{try{return JSON.parse(localStorage.getItem(LS_CUSTOM)||'[]');}catch{return[];}};
 const saveCustom=a=>{localStorage.setItem(LS_CUSTOM,JSON.stringify(a));syncPushKey('customPresets');};
-const allPresets=()=>[...DEFAULT_PRESETS,...loadCustom().map(p=>({...p,group:p.group||'Mes aliments'})),...ciqualPresets];
+const allPresets=()=>[...loadCustom().map(p=>({...p,group:p.group||'Mes aliments'})),...DEFAULT_PRESETS,...ciqualPresets];
 const normalizeSearchText=value=>(value||'')
   .toString()
   .trim()
@@ -3055,6 +3083,30 @@ function parseServingGrams(str){
   if(ml)return parseFloat(ml[1].replace(',','.'));
   return null;
 }
+function dateTargetLabel(dateKey=viewDateKey){
+  if(dateKey===todayKey())return "aujourd'hui";
+  if(dateKey===tomorrowKey())return 'demain';
+  return `le ${fmtDateKey(dateKey)}`;
+}
+function mealAddWarningText(){
+  return viewDateKey===todayKey() ? '' : `Attention : ajout prévu ${dateTargetLabel(viewDateKey)}.`;
+}
+function refreshAddMealDateWarning(){
+  const warn=document.getElementById('addMealDateWarning');
+  if(!warn)return;
+  const text=mealAddWarningText();
+  warn.textContent=text;
+  warn.classList.toggle('visible',!!text);
+}
+function refreshAddMealButtonLabel(){
+  const btn=document.getElementById('addMealBtn');
+  if(!btn || btn.dataset.feedback==='1')return;
+  btn.textContent=viewDateKey===todayKey()?'+ Ajouter au repas':`+ Ajouter au repas ${dateTargetLabel(viewDateKey)}`;
+}
+function refreshMealDateContext(){
+  refreshAddMealDateWarning();
+  refreshAddMealButtonLabel();
+}
 
 // ═══════════════════════════════════════════
 // CALORIE GOAL BANNER
@@ -3115,10 +3167,13 @@ function updateDateNav(){
   const isToday=viewDateKey===todayKey();
   const isTomorrow=viewDateKey===tomorrowKey();
   document.getElementById('dateNext').disabled=isTomorrow;
+  const todayBtn=document.getElementById('dateTodayBtn');
+  if(todayBtn)todayBtn.hidden=isToday;
   const lbl=document.getElementById('dateLabel');
   if(isToday){lbl.textContent='Aujourd\'hui';lbl.className='date-label today';}
   else if(isTomorrow){lbl.textContent='Demain';lbl.className='date-label';}
   else{lbl.textContent=fmtDateKey(viewDateKey);lbl.className='date-label';}
+  refreshMealDateContext();
 }
 function shiftDate(days){
   const nextKey=addDaysKey(viewDateKey,days);
@@ -3130,6 +3185,12 @@ function shiftDate(days){
 }
 document.getElementById('datePrev').addEventListener('click',()=>shiftDate(-1));
 document.getElementById('dateNext').addEventListener('click',()=>shiftDate(1));
+document.getElementById('dateTodayBtn').addEventListener('click',()=>{
+  viewDateKey=todayKey();
+  updateDateNav();
+  renderMealSection();
+  updateGoalBanner();
+});
 function openSwapMeals(){
   const other=MEAL_TYPES.find(t=>t!==activeMealType) || 'lunch';
   document.getElementById('swapMealsInfo').textContent=`Jour : ${fmtDateKey(viewDateKey)}`;
@@ -3740,23 +3801,22 @@ document.getElementById('addMealBtn').addEventListener('click',e=>{
   if(e.target.tagName==='SELECT')return;
   if(!lastResult)return;
   const mtype=document.getElementById('addMealTypeSelect').value;
+  const addedLabel=MEAL_LABELS[mtype]||'repas';
   const d=getDayData(viewDateKey);
   d[mtype].push(copyMealItem(lastResult));
   setDayData(viewDateKey,d);
   activeMealType=mtype;
   document.querySelectorAll('.meal-type-tab').forEach(b=>b.classList.toggle('active',b.dataset.mtype===mtype));
+  renderMealTypeBadges();
+  updateNavBadges();
   renderMealSection();updateGoalBanner();
 
   // feedback visuel
   const btn=document.getElementById('addMealBtn');
-  const origHTML=btn.innerHTML;
-  btn.querySelector('select').style.display='none';
-  btn.childNodes[0].textContent='\u2713 Ajout\u00e9  ';
-  btn.style.color='var(--green)';btn.style.borderColor='var(--green)';
-  setTimeout(()=>{
-    btn.innerHTML=origHTML;btn.style.color='';btn.style.borderColor='';
-    btn.querySelector('select').addEventListener('click',e=>e.stopPropagation());
-  },900);
+  btn.dataset.feedback='1';
+  btn.textContent=`\u2713 Ajout\u00e9 au ${addedLabel}`;
+  btn.style.color='var(--green)';
+  btn.style.borderColor='var(--green)';
 
   // ── reset calculateur
   ['kcalPer100','rawRef','cookedRef','queryValue','protRef','carbRef','fatRef',
@@ -3778,6 +3838,12 @@ document.getElementById('addMealBtn').addEventListener('click',e=>{
   document.getElementById('searchResults').innerHTML='';
   document.getElementById('searchStatus').textContent='';
   document.getElementById('searchInput').value='';
+  setTimeout(()=>{
+    btn.dataset.feedback='';
+    btn.style.color='';
+    btn.style.borderColor='';
+    refreshAddMealButtonLabel();
+  },1000);
 });
 // prevent select click from firing add
 document.getElementById('addMealTypeSelect').addEventListener('click',e=>e.stopPropagation());
@@ -3996,6 +4062,7 @@ function selectPreset(id){
       fixedFPerUnit:p.fixedF??null,
     };
     document.getElementById('addMealBtn').disabled=false;
+    refreshAddMealButtonLabel();
     updateSaveCurrentButtonLabel();
     renderPresets();
     return;
@@ -4266,6 +4333,7 @@ function calculate(){
   const preset=allPresets().find(x=>x.id===activeId);
   lastResult={name:preset?preset.name:(document.getElementById('newFoodName').value||'Aliment'),emoji:preset?preset.emoji:'',rawG,cookedG,kcal:totalK,p:totP,c:totC,f:totF,noCook:cookMode==='raw',qtyMode:mode,kcalPer100:k,ratio,...currentCalcPortionMeta()};
   document.getElementById('addMealBtn').disabled=false;
+  refreshAddMealButtonLabel();
 }
 
 // ═══════════════════════════════════════════
@@ -4890,6 +4958,7 @@ function addRecipeToMeal(recipe,tK,tP,tC,tF,tR,hM,factor,label,mtype,servedG){
   setDayData(viewDateKey,d);
   activeMealType=mtype;
   document.querySelectorAll('.meal-type-tab').forEach(b=>b.classList.toggle('active',b.dataset.mtype===mtype));
+  updateNavBadges();
   document.querySelectorAll('.main-tab').forEach(b=>b.classList.toggle('active',b.dataset.panel==='calc'));
   document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id==='panel-calc'));
   renderMealSection();updateGoalBanner();
@@ -4973,6 +5042,7 @@ function renderRecipeList(){
             <span style="font-size:10px;color:var(--text-dim);flex:1;">Poids cru : ${fmt(tR,0)}g · laisse vide si identique</span>
           </div>
           <div style="padding:10px 14px;">
+            <div class="recipe-date-warning ${viewDateKey===todayKey()?'':'visible'}">${escapeHtml(mealAddWarningText())}</div>
             <div style="display:flex;gap:6px;margin-bottom:10px;">
               <button class="add-mode-btn active" data-amode="parts" style="flex:1;background:var(--surface3);border:1px solid var(--border2);border-radius:2px;color:var(--text);font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.08em;text-transform:uppercase;padding:5px;cursor:pointer;">Par parts</button>
               <button class="add-mode-btn" data-amode="weight" style="flex:1;background:none;border:1px solid var(--border);border-radius:2px;color:var(--text-muted);font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.08em;text-transform:uppercase;padding:5px;cursor:pointer;">Par poids</button>
@@ -5072,7 +5142,7 @@ function renderRecipeList(){
       const mtype=card.querySelector('.recipe-meal-type').value;
       const factor=n/getServings();
       addRecipeToMeal(recipe,tK,tP,tC,tF,tR,hM,factor,n===1?'1 part':`${n} parts`,mtype,factor*getWeightRefSafe());
-      const btn=e.currentTarget;const orig=btn.textContent;btn.textContent='✓';btn.style.color='var(--green)';btn.style.borderColor='var(--green)';
+      const btn=e.currentTarget;const orig=btn.textContent;btn.textContent=`✓ ${MEAL_LABELS[mtype]||'Repas'}`;btn.style.color='var(--green)';btn.style.borderColor='var(--green)';
       setTimeout(()=>{btn.textContent=orig;btn.style.color='';btn.style.borderColor='';},1000);
     });
 
@@ -5083,7 +5153,7 @@ function renderRecipeList(){
       if(!w||!ref)return;
       const mtype=card.querySelector('.recipe-meal-type-w').value;
       addRecipeToMeal(recipe,tK,tP,tC,tF,tR,hM,w/ref,`${w}g`,mtype,w);
-      const btn=e.currentTarget;const orig=btn.textContent;btn.textContent='✓';btn.style.color='var(--green)';btn.style.borderColor='var(--green)';
+      const btn=e.currentTarget;const orig=btn.textContent;btn.textContent=`✓ ${MEAL_LABELS[mtype]||'Repas'}`;btn.style.color='var(--green)';btn.style.borderColor='var(--green)';
       setTimeout(()=>{btn.textContent=orig;btn.style.color='';btn.style.borderColor='';},1000);
     });
 
@@ -5219,7 +5289,7 @@ function buildPresetDropdown(filter=''){
   presetDropdown.innerHTML='';
   const q=normalizeSearchText(filter);
   const customIds=new Set(loadCustom().map(c=>c.id));
-  const sources=q?allPresets():[...DEFAULT_PRESETS,...loadCustom().map(p=>({...p,group:p.group||'Mes aliments'}))];
+  const sources=q?allPresets():[...loadCustom().map(p=>({...p,group:p.group||'Mes aliments'})),...DEFAULT_PRESETS];
   const MAX=80;
   const scored=[];
   for(const p of sources){
