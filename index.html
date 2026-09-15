@@ -975,6 +975,12 @@ body{
 }
 .recipe-card:hover{box-shadow:var(--shadow-md);}
 .recipe-card.expanded{border-color:var(--accent);}
+@keyframes recipeAddedPulse{
+  0%{box-shadow:0 0 0 0 rgba(49,163,108,0.35);border-color:var(--green);}
+  55%{box-shadow:0 0 0 8px rgba(49,163,108,0.12);border-color:var(--green);}
+  100%{box-shadow:var(--shadow);border-color:var(--accent);}
+}
+.recipe-card.recipe-just-added{animation:recipeAddedPulse 0.9s ease-out;}
 .recipe-header{
   display:flex;justify-content:space-between;align-items:center;
   padding:14px 16px;cursor:pointer;
@@ -5087,11 +5093,17 @@ function addRecipeToMeal(recipe,tK,tP,tC,tF,tR,hM,factor,label,mtype,servedG){
   setDayData(viewDateKey,d);
   activeMealType=mtype;
   document.querySelectorAll('.meal-type-tab').forEach(b=>b.classList.toggle('active',b.dataset.mtype===mtype));
+  renderMealTypeBadges();
   updateNavBadges();
-  document.querySelectorAll('.main-tab').forEach(b=>b.classList.toggle('active',b.dataset.panel==='calc'));
-  document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id==='panel-calc'));
-  renderMealSection();updateGoalBanner();
-  setTimeout(()=>document.getElementById('mealContent').scrollIntoView({behavior:'smooth'}),100);
+  updateGoalBanner();
+}
+
+function markRecipeAdded(card){
+  if(!card)return;
+  card.classList.remove('recipe-just-added');
+  void card.offsetWidth;
+  card.classList.add('recipe-just-added');
+  setTimeout(()=>card.classList.remove('recipe-just-added'),950);
 }
 
 // ═══════════════════════════════════════════
@@ -5271,6 +5283,7 @@ function renderRecipeList(){
       const mtype=card.querySelector('.recipe-meal-type').value;
       const factor=n/getServings();
       addRecipeToMeal(recipe,tK,tP,tC,tF,tR,hM,factor,n===1?'1 part':`${n} parts`,mtype,factor*getWeightRefSafe());
+      markRecipeAdded(card);
       const btn=e.currentTarget;const orig=btn.textContent;btn.textContent=`✓ ${MEAL_LABELS[mtype]||'Repas'}`;btn.style.color='var(--green)';btn.style.borderColor='var(--green)';
       setTimeout(()=>{btn.textContent=orig;btn.style.color='';btn.style.borderColor='';},1000);
     });
@@ -5282,6 +5295,7 @@ function renderRecipeList(){
       if(!w||!ref)return;
       const mtype=card.querySelector('.recipe-meal-type-w').value;
       addRecipeToMeal(recipe,tK,tP,tC,tF,tR,hM,w/ref,`${w}g`,mtype,w);
+      markRecipeAdded(card);
       const btn=e.currentTarget;const orig=btn.textContent;btn.textContent=`✓ ${MEAL_LABELS[mtype]||'Repas'}`;btn.style.color='var(--green)';btn.style.borderColor='var(--green)';
       setTimeout(()=>{btn.textContent=orig;btn.style.color='';btn.style.borderColor='';},1000);
     });

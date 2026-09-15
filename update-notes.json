@@ -1,6 +1,16 @@
 {
   "releases": [
     {
+      "id": "2026-09-15-recipe-add-stays-open",
+      "date": "2026-09-15",
+      "title": "Ajout de recette sans changement d'onglet",
+      "changes": [
+        "L'ajout d'une portion de recette dans un repas ne redirige plus vers le calculateur.",
+        "La recette reste ouverte après l'ajout.",
+        "Une animation locale confirme que la recette a bien été ajoutée au repas."
+      ]
+    },
+    {
       "id": "2026-09-15-food-serving-update",
       "date": "2026-09-15",
       "title": "Correction de la mise à jour des portions d'aliments",
