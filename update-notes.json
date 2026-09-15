@@ -1,6 +1,26 @@
 {
   "releases": [
     {
+      "id": "2026-09-15-food-serving-update",
+      "date": "2026-09-15",
+      "title": "Correction de la mise à jour des portions d'aliments",
+      "changes": [
+        "La mise à jour directe d'un aliment personnalisé prend maintenant en compte la nouvelle taille de portion saisie.",
+        "Après mise à jour, l'aliment sélectionné est rechargé avec ses nouvelles valeurs.",
+        "La création d'un aliment depuis le calculateur utilise la portion actuellement saisie."
+      ]
+    },
+    {
+      "id": "2026-09-15-portion-mode-consistency",
+      "date": "2026-09-15",
+      "title": "Correction du mode de quantité des aliments",
+      "changes": [
+        "Correction d'un cas où un aliment saisi en grammes pouvait être affiché comme une portion.",
+        "Les portions ne sont conservées que si le poids correspond réellement à taille de portion × nombre de portions.",
+        "Les anciennes lignes incohérentes repassent automatiquement en affichage grammes."
+      ]
+    },
+    {
       "id": "2026-09-11-ideas-and-update-notes",
       "date": "2026-09-11",
       "title": "Boîte à idées et détails des mises à jour",
