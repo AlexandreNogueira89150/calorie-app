@@ -1,6 +1,16 @@
 {
   "releases": [
     {
+      "id": "2026-09-15-scan-name-confirmation",
+      "date": "2026-09-15",
+      "title": "Nom modifiable après scan",
+      "changes": [
+        "Après scan d'un produit, le nom proposé par Open Food Facts peut être modifié avant sauvegarde.",
+        "Les valeurs nutritionnelles du produit scanné sont préremplies dans le calculateur.",
+        "Si le produit existe déjà, l'écran de modification de l'aliment existant est ouvert."
+      ]
+    },
+    {
       "id": "2026-09-15-recipe-add-stays-open",
       "date": "2026-09-15",
       "title": "Ajout de recette sans changement d'onglet",

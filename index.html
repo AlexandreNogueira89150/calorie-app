@@ -4289,14 +4289,14 @@ async function handleBarcodeDetected(code){
       showScannerError('Produit ' + code + ' non trouvé dans Open Food Facts. Crée-le manuellement avec "+ Créer".');
       return;
     }
-    saveScannedProduct(data.product);
+    prepareScannedProductForSave(data.product);
     closeScannerModal();
   } catch(e){
     showScannerError('Erreur réseau : ' + e.message);
   }
 }
 
-function saveScannedProduct(p){
+function prepareScannedProductForSave(p){
   const n = p.nutriments || {};
   const name = p.product_name_fr || p.product_name || ('Produit ' + (p.code || ''));
   const brand = (p.brands || '').split(',')[0].trim();
@@ -4306,36 +4306,40 @@ function saveScannedProduct(p){
     return;
   }
   const fullName = brand ? `${name} — ${brand}` : name;
+  const servingG = parseServingGrams(p.serving_size || '') ||
+    (p.serving_quantity != null ? parseFloat(String(p.serving_quantity).replace(',','.')) : null);
   const existing = findPresetByName(fullName);
   if(existing){
     activeId = existing.id;
     selectPreset(existing.id);
+    openEditPreset(existing.id);
+    document.getElementById('modalInfo').textContent='Produit déjà enregistré. Tu peux modifier son nom ou ses valeurs.';
     if(presetSelectedDisplay){
       document.getElementById('presetSelectedName').textContent = (existing.emoji||'📦') + ' ' + existing.name;
       presetSelectedDisplay.style.display = 'flex';
     }
     return;
   }
-  const id = 'c_' + Date.now();
-  const newPreset = {
-    id, name: fullName, emoji: '📦',
-    kcal: Math.round(kcal*10)/10,
-    p: n.proteins_100g != null ? Math.round(n.proteins_100g*10)/10 : null,
-    c: n.carbohydrates_100g != null ? Math.round(n.carbohydrates_100g*10)/10 : null,
-    f: n.fat_100g != null ? Math.round(n.fat_100g*10)/10 : null,
-    rawRef: 100, cookedRef: 100,
-    group: 'Mes aliments', servingG: n.serving_quantity || null, fixed: false
-  };
-  const arr = loadCustom();
-  arr.push(newPreset);
-  saveCustom(arr);
-  activeId = id;
-  selectPreset(id);
-  if(presetSelectedDisplay){
-    document.getElementById('presetSelectedName').textContent = '📦 ' + fullName;
-    presetSelectedDisplay.style.display = 'flex';
-  }
-  renderPresets();
+  applyCalcResult({
+    name,
+    brand,
+    kcal:Math.round(kcal*10)/10,
+    p:n.proteins_100g != null ? Math.round(n.proteins_100g*10)/10 : null,
+    c:n.carbohydrates_100g != null ? Math.round(n.carbohydrates_100g*10)/10 : null,
+    f:n.fat_100g != null ? Math.round(n.fat_100g*10)/10 : null,
+    servingG:Number.isFinite(servingG) ? servingG : null
+  });
+  isCreatingNew=false;
+  editingPresetId=null;
+  document.getElementById('newFoodName').value=fullName;
+  document.getElementById('newFoodEmoji').value='📦';
+  document.getElementById('modalAddTitle').textContent='Nommer le produit scanné';
+  document.getElementById('confirmSave').textContent='Sauvegarder';
+  document.getElementById('modalInfo').textContent=`Produit scanné · ${Math.round(kcal*10)/10} kcal/100g${brand?' · '+brand:''}`;
+  document.getElementById('modalEditMacros').style.display='none';
+  if(typeof resetModalType==='function')resetModalType();
+  document.getElementById('modalAdd').classList.add('open');
+  setTimeout(()=>document.getElementById('newFoodName').select(),80);
 }
 
 document.getElementById('scanBarcodeBtn').addEventListener('click', openScannerModal);
