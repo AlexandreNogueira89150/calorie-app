@@ -761,7 +761,12 @@ body{
 .meal-mobile-kcal{font-size:18px;font-weight:800;color:var(--accent);white-space:nowrap;line-height:1.1;}
 .meal-mobile-kcal span{display:block;font-size:10px;font-weight:600;color:var(--text-dim);text-align:right;margin-top:2px;}
 .meal-mobile-card-macros{display:flex;flex-wrap:wrap;gap:8px;font-size:11px;color:var(--text-muted);margin-top:9px;}
-.meal-mobile-actions{display:grid;grid-template-columns:40px minmax(72px,1fr) 40px 44px 44px;gap:6px;margin-top:10px;}
+.meal-mobile-actions{display:grid;grid-template-columns:44px minmax(64px,1fr) 44px;gap:6px;margin-top:10px;}
+.meal-item-tools{display:flex;align-items:center;gap:6px;max-width:100%;}
+.meal-item-tools select{width:100px;min-width:0;min-height:44px;flex:1;padding:6px;}
+.meal-item-tools>button{flex:none;min-width:44px;min-height:44px;}
+.meal-mobile-card>.meal-item-tools{margin-top:8px;}
+.meal-table .meal-item-tools{min-width:280px;}
 .meal-mobile-step,.meal-mobile-qty,.meal-mobile-share,.meal-mobile-delete{
   min-height:38px;
   border-radius:var(--radius-sm);
@@ -813,7 +818,7 @@ body{
   .meal-action-bar .share-meal-action{order:-1;}
 }
 @media(max-width:360px){
-  .meal-mobile-actions{grid-template-columns:38px minmax(64px,1fr) 38px 40px 40px;}
+  .meal-mobile-actions{grid-template-columns:44px minmax(64px,1fr) 44px;}
   .meal-action-bar{grid-template-columns:1fr;}
 }
 
@@ -3782,15 +3787,17 @@ function buildMealMobileCard(item,idx){
   const del=document.createElement('button');
   del.type='button';del.className='meal-mobile-delete';del.textContent='×';del.title='Supprimer';
   del.addEventListener('click',()=>deleteMealItem(idx));
-  actions.appendChild(minus);actions.appendChild(qty);actions.appendChild(plus);actions.appendChild(share);actions.appendChild(del);
+  actions.appendChild(minus);actions.appendChild(qty);actions.appendChild(plus);
   card.appendChild(actions);
-  card.appendChild(buildMealItemTools(idx));
+  const tools=buildMealItemTools(idx);
+  tools.appendChild(share);tools.appendChild(del);
+  card.appendChild(tools);
   return card;
 }
 
 function buildMealItemTools(idx){
   const row=document.createElement('div');
-  row.style.cssText='display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;max-width:100%;';
+  row.className='meal-item-tools';
   const source=activeMealType,date=viewDateKey;
   const items=getDayData(date)[source];
   const persist=data=>{setDayData(date,data);renderMealSection();updateGoalBanner();updateNavBadges();};
@@ -3807,7 +3814,6 @@ function buildMealItemTools(idx){
   });
   const menu=document.createElement('select');
   menu.setAttribute('aria-label','Actions pour '+items[idx].name);
-  menu.style.cssText='min-height:44px;min-width:0;max-width:100%;flex:1;padding:6px;';
   menu.add(new Option('Actions…',''));
   Object.entries(MEAL_LABELS).forEach(([key,label])=>{
     if(key!==source)menu.add(new Option('Déplacer vers '+label,'move:'+key));
@@ -3877,7 +3883,6 @@ function renderMealSection(){
     // name cell
     const nameTd=document.createElement('td');
     nameTd.innerHTML=`<div class="meal-name-cell"><span class="meal-emoji">${escapeHtml(item.emoji||'')}</span><div><div class="meal-item-name">${escapeHtml(item.name||'Aliment')}</div><div class="meal-sub">${escapeHtml(meta.display+(meta.subLabel?' · '+meta.subLabel:''))}</div></div></div>`;
-    nameTd.appendChild(buildMealItemTools(idx));
 
     // qty cell — inline editable
     const qtyTd=document.createElement('td');qtyTd.style.textAlign='center';
@@ -3899,11 +3904,12 @@ function renderMealSection(){
 
     const delTd=document.createElement('td');
     const shareBtn=document.createElement('button');shareBtn.className='share-row';shareBtn.textContent='↗';shareBtn.title='Partager';
-    shareBtn.style.marginRight='4px';
     shareBtn.addEventListener('click',()=>openShareModal('item',[item]));
     const delBtn=document.createElement('button');delBtn.className='del-row';delBtn.textContent='×';
     delBtn.addEventListener('click',()=>deleteMealItem(idx));
-    delTd.appendChild(shareBtn);delTd.appendChild(delBtn);
+    const tools=buildMealItemTools(idx);
+    tools.appendChild(shareBtn);tools.appendChild(delBtn);
+    delTd.appendChild(tools);
 
     tr.appendChild(nameTd);tr.appendChild(qtyTd);tr.appendChild(kcalTd);tr.appendChild(pTd);tr.appendChild(cTd);tr.appendChild(fTd);tr.appendChild(delTd);
     tbody.appendChild(tr);

@@ -1,6 +1,14 @@
 {
   "releases": [
     {
+      "id": "2026-09-17-meal-actions-position",
+      "date": "2026-09-17",
+      "title": "Actions des aliments regroupées",
+      "changes": [
+        "Le menu Actions est placé en fin de ligne à côté du partage sur ordinateur, et en bas de chaque carte sur téléphone."
+      ]
+    },
+    {
       "id": "2026-09-17-food-actions",
       "date": "2026-09-17",
       "title": "Scan et organisation des aliments",
