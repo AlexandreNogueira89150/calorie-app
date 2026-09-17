@@ -1,6 +1,17 @@
 {
   "releases": [
     {
+      "id": "2026-09-17-food-actions",
+      "date": "2026-09-17",
+      "title": "Scan et organisation des aliments",
+      "changes": [
+        "Les calories, macros et la portion sont modifiables avant de sauvegarder un produit scanné.",
+        "L'aliment et sa quantité restent sélectionnés après ajout à un repas.",
+        "Chaque aliment peut être réordonné, déplacé vers un autre repas ou enregistré comme défaut.",
+        "Les aliments par défaut peuvent être ajoutés individuellement ou tous ensemble."
+      ]
+    },
+    {
       "id": "2026-09-15-scan-name-confirmation",
       "date": "2026-09-15",
       "title": "Nom modifiable après scan",
