@@ -1,6 +1,17 @@
 {
   "releases": [
     {
+      "id": "2026-09-22-scanner",
+      "date": "2026-09-22",
+      "title": "Scan des produits amélioré",
+      "changes": [
+        "Détection native sur les navigateurs compatibles, avec lecture renforcée en secours.",
+        "Suppression du cadre de centrage : toute l'image est analysée.",
+        "Mise au point continue et lampe torche lorsque la caméra le permet.",
+        "Possibilité de relancer le scan ou de saisir le code-barres manuellement."
+      ]
+    },
+    {
       "id": "2026-09-17-meal-actions-position",
       "date": "2026-09-17",
       "title": "Actions des aliments regroupées",

@@ -1,4 +1,4 @@
-const CACHE = 'calories-v10';
+const CACHE = 'calories-v11';
 
 const ASSETS = [
   './',
