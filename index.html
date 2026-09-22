@@ -1983,6 +1983,20 @@ body{
   </div>
 
   <!-- Résultats TDEE -->
+  <section style="margin:20px 0;" aria-labelledby="weightTitle">
+    <h3 id="weightTitle">Suivi du poids</h3>
+    <form id="weightForm" style="display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin:12px 0;">
+      <label style="flex:1;min-width:130px;">Date de pesée<input class="itxt" type="date" id="weightDate" required></label>
+      <label style="flex:1;min-width:100px;">Poids (kg)<input class="itxt" type="number" id="weightValue" min="30" max="300" step="0.1" inputmode="decimal" required></label>
+      <button class="btn-primary" type="submit">Enregistrer</button>
+      <button class="btn-secondary" type="button" id="weightCancelEdit" hidden>Annuler</button>
+    </form>
+    <label><input type="checkbox" id="weightAuto"> Ajuster automatiquement mes objectifs</label>
+    <p id="weightSummary" role="status" style="margin:12px 0;"></p>
+    <button class="btn-secondary" id="weightApply" type="button">Appliquer le recalcul</button>
+    <div style="height:220px;width:100%;margin:14px 0;"><canvas id="weightChart" style="width:100%;height:100%;" role="img" aria-label="Évolution du poids et moyenne sur sept jours"></canvas></div>
+    <div id="weightHistory" style="max-height:260px;overflow:auto;"></div>
+  </section>
   <div id="profilResults" style="display:none;">
     <div class="card" style="background:linear-gradient(135deg,#fff9f5,#fff);border-color:var(--accent);">
       <div class="card-title">Mes besoins estimés</div>
@@ -2572,6 +2586,9 @@ function refreshPersonalUIFromStorage(){
   if(profilPoids) profilPoids.value=p.poids||'';
   if(profilTaille) profilTaille.value=p.taille||'';
   if(profilActivite) profilActivite.value=p.activite||'1.55';
+  document.getElementById('weightForm').dataset.editDate='';
+  document.getElementById('weightValue').value='';
+  document.getElementById('weightDate').value=todayKey();
   document.querySelectorAll('.profil-obj-btn').forEach(b=>b.classList.toggle('active',b.dataset.obj===(p.objectif||'maintain')));
 
   const goalEl=document.getElementById('goalInput');
@@ -3286,12 +3303,21 @@ function refreshMealDateContext(){
 const goalInput=document.getElementById('goalInput');
 goalInput.value=localStorage.getItem(LS_GOAL)||'';
 goalInput.addEventListener('input',()=>{
+  saveProfil(loadProfil());
   localStorage.setItem(LS_GOAL,goalInput.value);
+  saveProfil(loadProfil());
   syncPush('settings',{goal:parseFloat(goalInput.value)||0});
   updateGoalBanner();
 });
 function updateGoalBanner(){
-  const goal=parseFloat(goalInput.value)||0;
+  let goal=parseFloat(localStorage.getItem(LS_GOAL))||0;
+  if(viewDateKey<todayKey()){
+    const profile=JSON.parse(localStorage.getItem('calorieProfilV1')||'{}');
+    const entry=(profile.targetHistory||[]).filter(x=>x.date<=viewDateKey).sort((a,b)=>a.date.localeCompare(b.date)).pop();
+    if(entry)goal=entry.kcalTarget;
+  }
+  if(document.activeElement!==goalInput)goalInput.value=goal||'';
+  goalInput.disabled=viewDateKey<todayKey();
   const totals=dayTotals(viewDateKey);
   const macroGoals=macroGoalsFromKcal(goal);
 
@@ -6004,7 +6030,7 @@ function navigateTo(panel){
     try{
       if(panel==='meals'){renderMealSection();updateGoalBanner();}
       else if(panel==='recipes'){renderRecipeList();populateIngSelect();}
-      else if(panel==='profil'){calcProfil();}
+      else if(panel==='profil'){calcProfilOnOpen();}
       else if(panel==='family'){refreshFamilyUI();}
     }catch(e){console.error('[nav] Error in panel',panel,e);}
   },0);
@@ -6037,7 +6063,104 @@ function updateNavBadges(){
 const LS_PROFIL = 'calorieProfilV1';
 
 function loadProfil(){try{return JSON.parse(localStorage.getItem(LS_PROFIL)||'{}');}catch{return{};}}
-function saveProfil(p){localStorage.setItem(LS_PROFIL,JSON.stringify(p));syncPushKey('profil');}
+function saveProfil(p){
+  const old=loadProfil();
+  const before=energyForProfile(old);
+  const after=energyForProfile(p);
+  p.targetHistory=p.targetHistory||old.targetHistory||[];
+  if(!p.targetHistory.length&&before)p.targetHistory.push({date:'0000-00-00',...before,kcalTarget:Number(localStorage.getItem('calorieGoal'))||before.kcalTarget});
+  if(after){
+    const entry={date:todayKey(),...after,kcalTarget:Number(localStorage.getItem('calorieGoal'))||after.kcalTarget};
+    const last=p.targetHistory[p.targetHistory.length-1];
+    if(!last||last.maintenance!==entry.maintenance||last.kcalTarget!==entry.kcalTarget){
+      p.targetHistory=p.targetHistory.filter(x=>x.date!==entry.date);p.targetHistory.push(entry);
+    }
+  }
+  localStorage.setItem(LS_PROFIL,JSON.stringify(p));syncPushKey('profil');
+}
+
+function energyForProfile(p){
+  const weight=Number(p.poids),height=Number(p.taille),age=Number(p.age);
+  if(!(weight>0&&height>0&&age>0))return null;
+  const bmr=Math.round(10*weight+6.25*height-5*age+(p.sexe==='h'?5:-161));
+  const maintenance=Math.round(bmr*(Number(p.activite)||1.55));
+  const kcalTarget=Math.round(maintenance*(p.objectif==='loss'?0.8:p.objectif==='gain'?1.1:1));
+  return {bmr,maintenance,kcalTarget};
+}
+function historicalTargets(date,fallback){
+  const entries=loadProfil().targetHistory||[];
+  return entries.filter(x=>x.date<=date).sort((a,b)=>a.date.localeCompare(b.date)).pop()||fallback;
+}
+function weightMean(entries,date=todayKey()){
+  const start=addDaysKey(date,-6);
+  const recent=entries.filter(x=>x.date>=start&&x.date<=date);
+  return recent.length?recent.reduce((sum,x)=>sum+x.weight,0)/recent.length:null;
+}
+function weightProposal(){
+  const p=loadProfil(),mean=weightMean(p.weights||[]);
+  if(mean===null||Number(p.age)<18)return null;
+  const targets=energyForProfile({...p,poids:Math.round(mean*10)/10});
+  return targets?{...targets,weight:Math.round(mean*10)/10}:null;
+}
+function applyWeightProposal(automatic=false){
+  const p=loadProfil(),proposal=weightProposal();
+  if(!proposal)return;
+  if(automatic&&(!p.weightAuto||(p.weightAdjustedAt&&todayKey()<addDaysKey(p.weightAdjustedAt,7))))return;
+  saveProfil(p);
+  const updated=loadProfil();updated.poids=proposal.weight;updated.weightAdjustedAt=todayKey();
+  updated.weightAdjustment={date:todayKey(),from:Number(localStorage.getItem('calorieGoal'))||0,to:proposal.kcalTarget,weight:proposal.weight};
+  localStorage.setItem('calorieGoal',String(proposal.kcalTarget));
+  saveProfil(updated);syncPush('settings',{goal:proposal.kcalTarget});
+  document.getElementById('profilPoids').value=proposal.weight;
+  goalInput.value=proposal.kcalTarget;calcProfil();updateGoalBanner();
+}
+function renderWeightTracking(){
+  const p=loadProfil(),entries=(p.weights||[]).slice().sort((a,b)=>a.date.localeCompare(b.date));
+  const proposal=weightProposal(),mean=weightMean(entries);
+  const date=document.getElementById('weightDate');date.max=todayKey();if(!date.value)date.value=todayKey();
+  document.getElementById('weightCancelEdit').hidden=!document.getElementById('weightForm').dataset.editDate;
+  document.getElementById('weightAuto').checked=!!p.weightAuto;
+  document.getElementById('weightApply').disabled=!proposal;
+  const last=entries[entries.length-1];
+  document.getElementById('weightSummary').textContent=(last?`Dernière pesée : ${last.weight} kg (${last.date}). `:'Aucune pesée. ')+(mean!==null?`Moyenne sur 7 jours : ${fmt(mean)} kg. `:'Aucune pesée récente. ')+(proposal?`Objectif proposé : ${localStorage.getItem('calorieGoal')||'—'} → ${proposal.kcalTarget} kcal/j. Maintien : ${proposal.maintenance} kcal/j. `:'Profil adulte complet requis pour le recalcul. ')+(p.weightAdjustment?`Dernier ajustement le ${p.weightAdjustment.date} : ${p.weightAdjustment.from} → ${p.weightAdjustment.to} kcal/j, pour ${p.weightAdjustment.weight} kg.`:'');
+  const list=document.getElementById('weightHistory');list.replaceChildren();
+  entries.slice().reverse().forEach(entry=>{
+    const row=document.createElement('div');row.style.cssText='display:flex;align-items:center;flex-wrap:wrap;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);';
+    const label=document.createElement('span');label.style.flex='1';label.textContent=`${entry.date} · ${entry.weight} kg`;
+    const edit=document.createElement('button');edit.className='btn-ghost';edit.textContent='Modifier';edit.onclick=()=>{date.value=entry.date;document.getElementById('weightValue').value=entry.weight;document.getElementById('weightForm').dataset.editDate=entry.date;document.getElementById('weightCancelEdit').hidden=false;document.getElementById('weightValue').focus();};
+    const remove=document.createElement('button');remove.className='btn-ghost';remove.textContent='×';remove.setAttribute('aria-label','Supprimer la pesée du '+entry.date);remove.onclick=()=>{if(!confirm('Supprimer cette pesée ?'))return;const profile=loadProfil();profile.weights=(profile.weights||[]).filter(x=>x.date!==entry.date);saveProfil(profile);document.getElementById('weightForm').dataset.editDate='';applyWeightProposal(true);renderWeightTracking();};
+    row.append(label,edit,remove);list.appendChild(row);
+  });
+  requestAnimationFrame(()=>drawWeightChart(entries));
+}
+function drawWeightChart(entries){
+  const canvas=document.getElementById('weightChart'),width=canvas.clientWidth;
+  if(!width)return;
+  const ratio=window.devicePixelRatio||1;canvas.width=width*ratio;canvas.height=220*ratio;
+  const ctx=canvas.getContext('2d');ctx.scale(ratio,ratio);ctx.clearRect(0,0,width,220);
+  if(!entries.length)return;
+  const values=entries.map(x=>x.weight),min=Math.min(...values)-0.5,max=Math.max(...values)+0.5;
+  const first=Date.parse(entries[0].date),span=Math.max(86400000,Date.parse(entries[entries.length-1].date)-first);
+  const x=date=>45+(Date.parse(date)-first)/span*(width-60),y=value=>180-(value-min)/(max-min)*150;
+  ctx.font='12px sans-serif';ctx.fillStyle='#777';ctx.fillText(`${fmt(max)} kg`,0,25);ctx.fillText(`${fmt(min)} kg`,0,185);
+  ctx.fillText(entries[0].date,45,210);if(width>300)ctx.fillText(entries[entries.length-1].date,width-85,210);
+  [false,true].forEach(smooth=>{ctx.strokeStyle=smooth?'#269469':'#397cc6';ctx.lineWidth=2;ctx.beginPath();entries.forEach((entry,i)=>{const yy=y(smooth?weightMean(entries,entry.date):entry.weight);if(i)ctx.lineTo(x(entry.date),yy);else ctx.moveTo(x(entry.date),yy);});ctx.stroke();});
+  entries.forEach(entry=>{ctx.beginPath();ctx.arc(x(entry.date),y(entry.weight),3,0,Math.PI*2);ctx.fillStyle='#397cc6';ctx.fill();});
+  ctx.fillStyle='#397cc6';ctx.fillText('Pesées',45,12);ctx.fillStyle='#269469';ctx.fillText('Moyenne 7 j',110,12);
+}
+document.getElementById('weightForm').addEventListener('submit',event=>{
+  event.preventDefault();const date=document.getElementById('weightDate').value,weight=Number(document.getElementById('weightValue').value);
+  if(!date||date>todayKey()||weight<30||weight>300||!Number.isFinite(weight))return;
+  const p=loadProfil(),oldDate=event.currentTarget.dataset.editDate;
+  if((p.weights||[]).some(x=>x.date===date&&x.date!==oldDate)&&!confirm('Remplacer la pesée de cette date ?'))return;
+  p.weights=(p.weights||[]).filter(x=>x.date!==date&&x.date!==oldDate);p.weights.push({date,weight});saveProfil(p);
+  event.currentTarget.dataset.editDate='';document.getElementById('weightValue').value='';document.getElementById('weightDate').value=todayKey();
+  applyWeightProposal(true);renderWeightTracking();
+});
+document.getElementById('weightAuto').addEventListener('change',event=>{const p=loadProfil();p.weightAuto=event.target.checked;saveProfil(p);applyWeightProposal(true);renderWeightTracking();});
+document.getElementById('weightApply').addEventListener('click',()=>applyWeightProposal());
+document.getElementById('weightCancelEdit').addEventListener('click',()=>{document.getElementById('weightForm').dataset.editDate='';document.getElementById('weightValue').value='';document.getElementById('weightDate').value=todayKey();renderWeightTracking();});
+window.addEventListener('resize',()=>drawWeightChart(loadProfil().weights?.slice().sort((a,b)=>a.date.localeCompare(b.date))||[]));
 
 // Restore saved profil on load
 refreshPersonalUIFromStorage();
@@ -6148,12 +6271,16 @@ function renderProfileBalance(targets){
   const elapsed=daysBetweenInclusive(start,end);
   const history=loadHistory();
   const totals={kcal:0,p:0,c:0,f:0};
-  let followed=0;
+  let followed=0,maintenanceTotal=0;
+  const rangeTotals={p:{min:0,max:0},c:{min:0,max:0},f:{min:0,max:0}};
   for(const d=new Date(start);d<=end;d.setDate(d.getDate()+1)){
     const key=formatDateKey(d);
     const day=history[key];
     if(!storedDayHasEntries(day))continue;
     const dt=storedDayTotals(day);
+    maintenanceTotal+=(historicalTargets(key,targets).maintenance||targets.maintenance);
+    const dailyRanges=macroGoalRangesFromKcal(historicalTargets(key,targets).kcalTarget);
+    ['p','c','f'].forEach(macro=>{rangeTotals[macro].min+=dailyRanges[macro].min;rangeTotals[macro].max+=dailyRanges[macro].max;});
     totals.kcal+=dt.kcal;totals.p+=dt.p;totals.c+=dt.c;totals.f+=dt.f;
     followed++;
   }
@@ -6167,9 +6294,11 @@ function renderProfileBalance(targets){
     c:totals.c/followed,
     f:totals.f/followed
   };
-  const dailyDelta=avg.kcal-targets.maintenance;
+  const averageMaintenance=maintenanceTotal/followed;
+  const dailyDelta=avg.kcal-averageMaintenance;
   const totalDelta=dailyDelta*followed;
-  const ranges=targets.macroRanges;
+  const ranges=rangeTotals;
+  ['p','c','f'].forEach(macro=>{ranges[macro].min=Math.round(ranges[macro].min/followed);ranges[macro].max=Math.round(ranges[macro].max/followed);});
   root.innerHTML=`
     <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">${label} · ${followed} j suivis sur ${elapsed} écoulés</div>
     <div class="profile-balance-summary">
@@ -6179,7 +6308,7 @@ function renderProfileBalance(targets){
       </div>
       <div class="profile-balance-stat">
         <div class="profile-balance-label">Maintien</div>
-        <div class="profile-balance-value neutral">${targets.maintenance} kcal/j</div>
+        <div class="profile-balance-value neutral">${fmt(averageMaintenance,0)} kcal/j</div>
       </div>
       <div class="profile-balance-stat">
         <div class="profile-balance-label">Écart maintien / jour</div>
@@ -6206,6 +6335,7 @@ document.querySelectorAll('.profile-balance-tab').forEach(btn=>{
 });
 
 function calcProfil(){
+  renderWeightTracking();
   const targets=profileEnergyTargets();
 
   const empty=document.getElementById('profilEmpty');
@@ -6238,8 +6368,10 @@ function calcProfil(){
 document.getElementById('profilApplyBtn').addEventListener('click',()=>{
   const kcal = document.getElementById('profilApplyBtn')._tdee;
   if(!kcal)return;
+  saveProfil(loadProfil());
   goalInput.value = kcal;
   localStorage.setItem(LS_GOAL, kcal);
+  saveProfil(loadProfil());
   syncPush('settings',{goal:kcal});
   updateGoalBanner();
   // Visual feedback
@@ -6251,7 +6383,7 @@ document.getElementById('profilApplyBtn').addEventListener('click',()=>{
 });
 
 // Auto-calc on panel open
-function calcProfilOnOpen(){calcProfil();}
+function calcProfilOnOpen(){applyWeightProposal(true);calcProfil();}
 
 renderPresets();
 updateDateNav();

@@ -1,6 +1,17 @@
 {
   "releases": [
     {
+      "id": "2026-09-22-weight-tracking",
+      "date": "2026-09-22",
+      "title": "Pesées et objectifs évolutifs",
+      "changes": [
+        "Historique personnel des pesées avec date, modification, suppression et courbe.",
+        "Recalcul proposé à partir de la moyenne des pesées des sept derniers jours.",
+        "Ajustement automatique optionnel, au maximum une fois tous les sept jours.",
+        "Conservation des objectifs et du maintien historiques à partir de cette mise à jour."
+      ]
+    },
+    {
       "id": "2026-09-22-recipe-categories",
       "date": "2026-09-22",
       "title": "Catégories de recettes familiales",
