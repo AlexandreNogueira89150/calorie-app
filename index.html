@@ -535,6 +535,108 @@ body{
 }
 .date-action-btn:hover{border-color:var(--text-muted);color:var(--text);}
 .date-action-btn.danger:hover{border-color:var(--red);color:var(--red);}
+.date-action-btn.primary{border-color:var(--accent);color:var(--accent);background:var(--accent-light);}
+.date-action-btn[hidden]{display:none;}
+@media(max-width:767px){
+  .date-nav{
+    display:grid;
+    grid-template-columns:48px minmax(0,1fr) minmax(0,1fr) 48px;
+    gap:8px;
+    align-items:stretch;
+  }
+  #datePrev{grid-column:1;grid-row:1;}
+  #dateNext{grid-column:4;grid-row:1;}
+  .date-nav-btn{
+    width:100%;
+    height:48px;
+    min-width:48px;
+    font-size:24px;
+  }
+  .date-label{
+    grid-column:2 / 4;
+    grid-row:1;
+    min-height:48px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:0 8px;
+    border:1.5px solid var(--border);
+    border-radius:var(--radius-sm);
+    background:var(--surface);
+    box-shadow:var(--shadow);
+    line-height:1.2;
+  }
+  .date-action-btn{
+    width:100%;
+    min-height:42px;
+    padding:8px 6px;
+    font-size:11px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  #dateTodayBtn{grid-column:1 / 3;grid-row:2;}
+  #swapMealsBtn{grid-column:3 / 5;grid-row:2;}
+  #dupDayBtn{grid-column:1 / 3;grid-row:3;}
+  #clearDayBtn{grid-column:3 / 5;grid-row:3;}
+  .date-nav:not(.has-today-shortcut) #swapMealsBtn{grid-column:1 / 3;grid-row:2;}
+  .date-nav:not(.has-today-shortcut) #dupDayBtn{grid-column:3 / 5;grid-row:2;}
+  .date-nav:not(.has-today-shortcut) #clearDayBtn{grid-column:1 / 5;grid-row:3;}
+}
+
+.meal-date-warning{
+  display:none;
+  margin-top:8px;
+  padding:8px 10px;
+  border:1px solid var(--orange);
+  border-radius:var(--radius-sm);
+  background:var(--orange-light);
+  color:var(--orange);
+  font-size:11px;
+  font-weight:600;
+}
+.meal-date-warning.visible{display:block;}
+.recipe-date-warning{
+  display:none;
+  width:100%;
+  padding:6px 8px;
+  border-radius:var(--radius-sm);
+  background:var(--orange-light);
+  color:var(--orange);
+  font-size:10px;
+  font-weight:600;
+}
+.recipe-date-warning.visible{display:block;margin-bottom:10px;}
+
+.ideas-form{display:flex;gap:8px;align-items:flex-start;margin-bottom:12px;}
+.ideas-form textarea{min-height:72px;resize:vertical;}
+.ideas-list{display:flex;flex-direction:column;gap:8px;}
+.idea-card{
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  padding:10px 12px;
+}
+.idea-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:6px;}
+.idea-text{font-size:13px;color:var(--text);line-height:1.35;white-space:pre-wrap;}
+.idea-meta{font-size:10px;color:var(--text-dim);margin-top:4px;}
+.idea-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:8px;}
+.idea-vote-btn,.idea-status-select,.idea-delete-btn{
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  background:var(--surface);
+  color:var(--text-muted);
+  font-family:'Inter',sans-serif;
+  font-size:11px;
+  font-weight:600;
+  padding:6px 8px;
+  cursor:pointer;
+}
+.idea-vote-btn.voted{border-color:var(--accent);color:var(--accent);background:var(--accent-light);}
+.idea-delete-btn:hover{border-color:var(--red);color:var(--red);}
+@media(max-width:520px){
+  .ideas-form{flex-direction:column;}
+  .ideas-form .btn-accent{width:100%;}
+}
 
 /* ── MEAL TYPE TABS ── */
 .meal-type-tabs{
@@ -613,6 +715,13 @@ body{
   transition:color 0.1s;line-height:1;
 }
 .del-row:hover{color:var(--red);}
+.share-row{
+  background:var(--accent-light);border:1px solid var(--accent);
+  color:var(--accent);border-radius:4px;
+  cursor:pointer;font-size:14px;font-weight:700;padding:3px 6px;
+  transition:all 0.1s;line-height:1;
+}
+.share-row:hover{background:var(--accent);color:var(--bg);}
 .meal-totals-row td{
   font-weight:700;color:var(--text);
   background:var(--surface2);
@@ -621,6 +730,97 @@ body{
   font-size:13px;
 }
 .meal-totals-row td:first-child{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-muted);}
+.meal-mobile-list{display:none;}
+.meal-mobile-summary{
+  background:var(--surface);
+  border:1.5px solid var(--border);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:12px;
+  margin-bottom:10px;
+}
+.meal-mobile-summary-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;}
+.meal-mobile-summary-label{font-size:11px;font-weight:600;text-transform:uppercase;color:var(--text-muted);}
+.meal-mobile-summary-kcal{font-size:26px;font-weight:800;line-height:1.1;color:var(--accent);margin-top:2px;}
+.meal-mobile-summary-qty{font-size:11px;color:var(--text-dim);text-align:right;padding-top:2px;}
+.meal-mobile-macros{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px;}
+.meal-mobile-macro{background:var(--surface2);border-radius:var(--radius-sm);padding:8px;}
+.meal-mobile-macro span{display:block;font-size:10px;color:var(--text-dim);margin-bottom:2px;}
+.meal-mobile-macro strong{font-size:14px;color:var(--text);}
+.meal-mobile-card{
+  background:var(--surface);
+  border:1.5px solid var(--border);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:11px;
+  margin-bottom:9px;
+}
+.meal-mobile-card-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;}
+.meal-mobile-name{font-size:14px;font-weight:700;color:var(--text);line-height:1.25;}
+.meal-mobile-sub{font-size:11px;color:var(--text-dim);margin-top:2px;}
+.meal-mobile-kcal{font-size:18px;font-weight:800;color:var(--accent);white-space:nowrap;line-height:1.1;}
+.meal-mobile-kcal span{display:block;font-size:10px;font-weight:600;color:var(--text-dim);text-align:right;margin-top:2px;}
+.meal-mobile-card-macros{display:flex;flex-wrap:wrap;gap:8px;font-size:11px;color:var(--text-muted);margin-top:9px;}
+.meal-mobile-actions{display:grid;grid-template-columns:44px minmax(64px,1fr) 44px;gap:6px;margin-top:10px;}
+.meal-item-tools{display:flex;align-items:center;gap:6px;max-width:100%;}
+.meal-item-tools select{width:100px;min-width:0;min-height:44px;flex:1;padding:6px;}
+.meal-item-tools>button{flex:none;min-width:44px;min-height:44px;}
+.meal-mobile-card>.meal-item-tools{margin-top:8px;}
+.meal-table .meal-item-tools{min-width:280px;}
+.meal-mobile-step,.meal-mobile-qty,.meal-mobile-share,.meal-mobile-delete{
+  min-height:38px;
+  border-radius:var(--radius-sm);
+  font-family:'Inter',sans-serif;
+  font-size:14px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.meal-mobile-step{
+  border:1.5px solid var(--border);
+  background:var(--surface2);
+  color:var(--text);
+  cursor:pointer;
+}
+.meal-mobile-qty{
+  border:1.5px solid var(--border);
+  background:var(--bg);
+  color:var(--text);
+  font-weight:700;
+  text-align:center;
+  width:100%;
+  outline:none;
+  appearance:none;
+  -moz-appearance:textfield;
+}
+.meal-mobile-qty::-webkit-outer-spin-button,.meal-mobile-qty::-webkit-inner-spin-button{-webkit-appearance:none;}
+.meal-mobile-qty:focus{border-color:var(--accent);}
+.meal-mobile-share{
+  border:1.5px solid var(--accent);
+  background:var(--accent-light);
+  color:var(--accent);
+  font-weight:800;
+  cursor:pointer;
+}
+.meal-mobile-delete{
+  border:1.5px solid var(--border);
+  background:var(--surface);
+  color:var(--red);
+  cursor:pointer;
+}
+.meal-action-bar{display:flex;gap:8px;margin-top:8px;}
+.meal-action-bar .share-meal-action{flex:1.2;font-size:10px;padding:7px;}
+.meal-action-bar .secondary-meal-action{flex:1;font-size:9px;padding:7px;}
+@media(max-width:767px){
+  .meal-table-wrap{display:none;}
+  .meal-mobile-list{display:block;}
+  .meal-action-bar{display:grid;grid-template-columns:1.25fr 1fr 1fr;}
+  .meal-action-bar .share-meal-action{order:-1;}
+}
+@media(max-width:360px){
+  .meal-mobile-actions{grid-template-columns:44px minmax(64px,1fr) 44px;}
+  .meal-action-bar{grid-template-columns:1fr;}
+}
 
 /* ── COLORS ── */
 .kv{color:var(--accent);font-weight:600;}
@@ -686,6 +886,47 @@ body{
 .weekly-deficit-val.over{color:var(--red);}
 .weekly-deficit-val.neutral{color:var(--text-muted);}
 
+.profile-macro-note{font-size:10px;color:var(--text-dim);margin-top:2px;}
+.profile-balance-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px;}
+.profile-balance-tab{
+  border:1.5px solid var(--border);
+  border-radius:var(--radius-sm);
+  background:var(--surface2);
+  color:var(--text-muted);
+  font-family:'Inter',sans-serif;
+  font-size:12px;
+  font-weight:600;
+  padding:8px 10px;
+  cursor:pointer;
+  transition:all 0.15s;
+}
+.profile-balance-tab.active{background:var(--accent-light);border-color:var(--accent);color:var(--accent);}
+.profile-balance-summary{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:10px;
+  margin-bottom:12px;
+}
+.profile-balance-stat{
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  padding:12px;
+}
+.profile-balance-label{font-size:10px;font-weight:600;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px;}
+.profile-balance-value{font-size:18px;font-weight:700;color:var(--text);}
+.profile-balance-value.ok{color:var(--green);}
+.profile-balance-value.over{color:var(--red);}
+.profile-balance-value.neutral{color:var(--text-muted);}
+.profile-balance-macros{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.profile-balance-macro{border-radius:var(--radius-sm);padding:10px;text-align:center;font-size:12px;font-weight:700;}
+.profile-balance-macro span{display:block;font-size:10px;font-weight:600;text-transform:uppercase;margin-bottom:3px;}
+.profile-balance-empty{font-size:12px;color:var(--text-muted);text-align:center;padding:18px;background:var(--surface2);border-radius:var(--radius-sm);}
+@media(max-width:520px){
+  .profile-balance-summary{grid-template-columns:1fr;}
+  .profile-balance-macros{grid-template-columns:1fr;}
+}
+
 /* ── BOTTOM ACTIONS (calc tab) ── */
 .bottom-actions{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:8px;}
 .btn-ghost{
@@ -717,6 +958,20 @@ body{
 .error-msg{font-size:12px;color:var(--red);padding:8px 0 0;min-height:20px;font-weight:500;}
 
 /* ── RECIPES ── */
+.recipe-cat-filter{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;}
+.recipe-cat-btn{
+  padding:6px 12px;
+  font-family:'Inter',sans-serif;
+  font-size:12px;font-weight:500;
+  color:var(--text-muted);
+  background:var(--surface2);
+  border:1.5px solid var(--border);
+  border-radius:99px;
+  cursor:pointer;transition:all 0.15s;
+  white-space:nowrap;
+}
+.recipe-cat-btn:hover{border-color:var(--border2);color:var(--text);}
+.recipe-cat-btn.active{background:var(--accent-light);border-color:var(--accent);color:var(--accent);font-weight:600;}
 .recipe-card{
   background:var(--surface);border:1.5px solid var(--border);
   border-radius:var(--radius);box-shadow:var(--shadow);
@@ -725,6 +980,12 @@ body{
 }
 .recipe-card:hover{box-shadow:var(--shadow-md);}
 .recipe-card.expanded{border-color:var(--accent);}
+@keyframes recipeAddedPulse{
+  0%{box-shadow:0 0 0 0 rgba(49,163,108,0.35);border-color:var(--green);}
+  55%{box-shadow:0 0 0 8px rgba(49,163,108,0.12);border-color:var(--green);}
+  100%{box-shadow:var(--shadow);border-color:var(--accent);}
+}
+.recipe-card.recipe-just-added{animation:recipeAddedPulse 0.9s ease-out;}
 .recipe-header{
   display:flex;justify-content:space-between;align-items:center;
   padding:14px 16px;cursor:pointer;
@@ -1314,8 +1575,8 @@ body{
           <button class="portion-close" id="portionClose">×</button>
         </div>
 
-        <!-- Grammes / Portions toggle -->
-        <div class="toggle-group cols-2" style="margin-bottom:12px;">
+                <!-- Grammes / Portions toggle -->
+        <div class="toggle-group cols-2" id="calcQtyModeGroup" style="margin-bottom:12px;">
           <button class="calc-qty-mode-btn toggle-btn active" data-qmode="grams">⚖ Par grammes</button>
           <button class="calc-qty-mode-btn toggle-btn" data-qmode="portions">🍽 Par portions</button>
         </div>
@@ -1394,6 +1655,7 @@ body{
           <option value="snack">🍎 Collation</option>
         </select>
       </div>
+      <div class="meal-date-warning" id="addMealDateWarning"></div>
 
       <!-- Bottom actions -->
       <div class="bottom-actions">
@@ -1462,10 +1724,6 @@ body{
       </div>
     </div>
 
-    <div class="weekly-deficit">
-      <span class="goal-lbl">Déficit semaine</span>
-      <span class="weekly-deficit-val neutral" id="weeklyDeficit">—</span>
-    </div>
   </div>
 
   <!-- Date nav -->
@@ -1473,8 +1731,15 @@ body{
     <button class="date-nav-btn" id="datePrev">‹</button>
     <span class="date-label today" id="dateLabel">Aujourd'hui</span>
     <button class="date-nav-btn" id="dateNext" disabled>›</button>
+    <button class="date-action-btn primary" id="dateTodayBtn" hidden>Aujourd'hui</button>
+    <button class="date-action-btn" id="swapMealsBtn">⇄ Inverser</button>
     <button class="date-action-btn" id="dupDayBtn">⧉ Dupliquer</button>
     <button class="date-action-btn danger" id="clearDayBtn">Vider</button>
+  </div>
+
+  <div class="card" id="shareInboxCard" style="display:none;">
+    <div class="card-title">Demandes reçues <span id="shareInboxCount" style="color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0;"></span></div>
+    <div id="shareInboxList" style="display:flex;flex-direction:column;gap:8px;"></div>
   </div>
 
   <!-- Meal type tabs -->
@@ -1487,6 +1752,8 @@ body{
 
   <div style="display:flex;gap:8px;margin-bottom:12px;">
     <button class="btn-ghost" style="flex:1;font-size:11px;" id="saveMealBtn">+ Sauvegarder ce repas</button>
+    <button class="btn-ghost" style="flex:1;font-size:11px;" id="addDefaultsBtn">+ Défauts</button>
+    <button class="btn-ghost" style="flex:1;font-size:11px;" id="setDefaultsBtn">Définir défaut</button>
     <button class="btn-ghost" style="flex:1;font-size:11px;" id="balanceMealBtn">⚖ Équilibrer</button>
   </div>
 
@@ -1515,6 +1782,16 @@ body{
       <div class="field" style="flex:1">
         <label>Nom de la recette</label>
         <input type="text" class="itxt" id="bName" placeholder="ex. Bol poulet riz" autocomplete="off">
+      </div>
+    </div>
+
+    <div class="field" style="margin-bottom:14px;">
+      <label>Catégorie</label>
+      <div class="recipe-cat-filter" id="bCategorySelect">
+        <button type="button" class="recipe-cat-btn" data-cat="breakfast">🌅 Petit-déj</button>
+        <button type="button" class="recipe-cat-btn active" data-cat="meal">🍽 Repas</button>
+        <button type="button" class="recipe-cat-btn" data-cat="dessert">🍰 Dessert</button>
+        <button type="button" class="recipe-cat-btn" data-cat="snack">🍎 Collation</button>
       </div>
     </div>
 
@@ -1633,9 +1910,21 @@ body{
     </div>
   </div>
 
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input type="text" class="search-input" id="recipeSearchInput" placeholder="Rechercher une recette…" autocomplete="off">
+  </div>
+  <div class="recipe-cat-filter" id="recipeCatFilter">
+    <button class="recipe-cat-btn active" data-rcat="all">Toutes</button>
+    <button class="recipe-cat-btn" data-rcat="breakfast">🌅 Petit-déj</button>
+    <button class="recipe-cat-btn" data-rcat="meal">🍽 Repas</button>
+    <button class="recipe-cat-btn" data-rcat="dessert">🍰 Dessert</button>
+    <button class="recipe-cat-btn" data-rcat="snack">🍎 Collation</button>
+  </div>
+
   <div id="recipeList"></div>
   <div id="recipesEmpty" style="display:none;">
-    <div class="empty-state"><div class="empty-state-icon">📋</div>Aucune recette sauvegardée</div>
+    <div class="empty-state"><div class="empty-state-icon">📋</div><span id="recipesEmptyMsg">Aucune recette sauvegardée</span></div>
   </div>
 </div><!-- /panel-recipes -->
 
@@ -1713,37 +2002,44 @@ body{
       </div>
 
       <!-- Macros -->
-      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-muted);margin-bottom:8px;">Répartition macros recommandée</div>
+      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-muted);margin-bottom:8px;">Fourchettes macros recommandées</div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;">
         <div style="background:var(--blue-light);border-radius:var(--radius-sm);padding:12px;text-align:center;">
           <div style="font-size:10px;font-weight:600;text-transform:uppercase;color:var(--blue);margin-bottom:4px;">Protéines</div>
           <div style="font-size:20px;font-weight:700;color:var(--blue);" id="profilProt">—</div>
-          <div style="font-size:10px;color:var(--text-dim);">g/jour</div>
-          <div style="font-size:10px;color:var(--text-dim);margin-top:2px;" id="profilProtKcal"></div>
+          <div class="profile-macro-note" id="profilProtKcal"></div>
         </div>
         <div style="background:var(--orange-light);border-radius:var(--radius-sm);padding:12px;text-align:center;">
           <div style="font-size:10px;font-weight:600;text-transform:uppercase;color:var(--orange);margin-bottom:4px;">Glucides</div>
           <div style="font-size:20px;font-weight:700;color:var(--orange);" id="profilGluc">—</div>
-          <div style="font-size:10px;color:var(--text-dim);">g/jour</div>
-          <div style="font-size:10px;color:var(--text-dim);margin-top:2px;" id="profilGlucKcal"></div>
+          <div class="profile-macro-note" id="profilGlucKcal"></div>
         </div>
         <div style="background:var(--green-light);border-radius:var(--radius-sm);padding:12px;text-align:center;">
           <div style="font-size:10px;font-weight:600;text-transform:uppercase;color:var(--green);margin-bottom:4px;">Lipides</div>
           <div style="font-size:20px;font-weight:700;color:var(--green);" id="profilLip">—</div>
-          <div style="font-size:10px;color:var(--text-dim);">g/jour</div>
-          <div style="font-size:10px;color:var(--text-dim);margin-top:2px;" id="profilLipKcal"></div>
+          <div class="profile-macro-note" id="profilLipKcal"></div>
         </div>
       </div>
 
       <!-- Note méthode -->
       <div style="font-size:11px;color:var(--text-muted);padding:8px 12px;background:var(--surface2);border-radius:var(--radius-sm);margin-bottom:12px;border-left:3px solid var(--accent);">
-        Formule Mifflin-St Jeor · Macros : P 30% · G 40% · L 30%<br>
+        Formule Mifflin-St Jeor · Macros : P 25-35% · G 35-45% · L 25-35%<br>
         <span style="color:var(--text-dim);">Valeurs indicatives — consulte un professionnel de santé pour un suivi personnalisé.</span>
       </div>
 
       <button class="btn-primary" id="profilApplyBtn" style="width:100%;">
         ✓ Appliquer comme objectif journalier
       </button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Bilans</div>
+      <div class="profile-balance-tabs">
+        <button type="button" class="profile-balance-tab active" data-balance-period="week">Semaine</button>
+        <button type="button" class="profile-balance-tab" data-balance-period="month">Mois</button>
+        <button type="button" class="profile-balance-tab" data-balance-period="year">Année</button>
+      </div>
+      <div id="profileBalanceContent"></div>
     </div>
   </div>
 
@@ -1768,6 +2064,32 @@ body{
     <div class="card-title">Membres <span id="familyMemberCount" style="color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0;"></span></div>
     <div id="familyMembersList" style="display:flex;flex-direction:column;gap:8px;">
       <div style="font-size:12px;color:var(--text-dim);">Chargement…</div>
+    </div>
+  </div>
+
+  <!-- Admin -->
+  <div class="card" id="familyAdminCard" style="display:none;">
+    <div class="card-title">Mode administrateur</div>
+    <div style="display:flex;gap:8px;align-items:flex-end;">
+      <div class="field" style="flex:1;margin-bottom:0;">
+        <label>Compte actif</label>
+        <select class="itxt" id="familyAdminMemberSelect" style="font-size:13px;cursor:pointer;"></select>
+      </div>
+      <button class="btn-accent" id="familyAdminSwitchBtn">Ouvrir</button>
+    </div>
+    <div id="familyAdminStatus" style="font-size:12px;color:var(--text-muted);margin-top:8px;min-height:18px;"></div>
+  </div>
+
+  <!-- Boîte à idées -->
+  <div class="card">
+    <div class="card-title">Boîte à idées <span id="ideaCount" style="color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0;"></span></div>
+    <div class="ideas-form">
+      <textarea class="itxt" id="ideaInput" placeholder="Proposer une amélioration..." maxlength="500" style="flex:1;font-size:13px;"></textarea>
+      <button class="btn-accent" id="addIdeaBtn">Ajouter</button>
+    </div>
+    <div id="ideasStatus" style="font-size:12px;color:var(--text-muted);min-height:18px;margin-bottom:6px;"></div>
+    <div class="ideas-list" id="ideasList">
+      <div style="font-size:12px;color:var(--text-dim);">Chargement...</div>
     </div>
   </div>
 
@@ -1908,6 +2230,34 @@ body{
   </div>
 </div>
 
+<!-- MODAL: SWAP MEALS -->
+<div class="modal-overlay" id="modalSwapMeals">
+  <div class="modal">
+    <h3>Inverser deux repas</h3>
+    <div id="swapMealsInfo" style="font-size:11px;color:var(--text-muted);margin-bottom:14px;"></div>
+    <div class="field"><label>Premier repas</label>
+      <select id="swapMealA" class="itxt" style="font-size:13px;cursor:pointer;">
+        <option value="breakfast">Petit-déj</option>
+        <option value="lunch">Déjeuner</option>
+        <option value="dinner">Dîner</option>
+        <option value="snack">Collation</option>
+      </select>
+    </div>
+    <div class="field" style="margin-top:10px;"><label>Deuxième repas</label>
+      <select id="swapMealB" class="itxt" style="font-size:13px;cursor:pointer;">
+        <option value="breakfast">Petit-déj</option>
+        <option value="lunch">Déjeuner</option>
+        <option value="dinner">Dîner</option>
+        <option value="snack">Collation</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-primary" id="confirmSwapMeals">Inverser</button>
+      <button class="btn-secondary" id="cancelSwapMeals">Annuler</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: DUPLICATE MEAL -->
 <div class="modal-overlay" id="modalDupMeal">
   <div class="modal">
@@ -1932,6 +2282,23 @@ body{
   </div>
 </div>
 
+<!-- MODAL: SHARE MEAL / ITEM -->
+<div class="modal-overlay" id="modalShareMeal">
+  <div class="modal">
+    <h3 id="shareMealTitle">Partager</h3>
+    <div id="shareMealInfo" style="font-size:11px;color:var(--text-muted);margin-bottom:14px;"></div>
+    <div class="field">
+      <label>Destinataire</label>
+      <select id="shareMealTarget" class="itxt" style="font-size:13px;cursor:pointer;"></select>
+    </div>
+    <div id="shareMealStatus" style="font-size:12px;margin-top:8px;min-height:18px;"></div>
+    <div class="modal-actions">
+      <button class="btn-primary" id="confirmShareMeal">Envoyer</button>
+      <button class="btn-secondary" id="cancelShareMeal">Annuler</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: DUPLICATE DAY -->
 <div class="modal-overlay" id="modalDupDay">
   <div class="modal">
@@ -1949,7 +2316,7 @@ body{
 </div>
 <!-- MODAL PRESET SAVE -->
 <div class="modal-overlay" id="modalAdd">
-  <div class="modal">
+  <div class="modal" style="max-height:85vh;overflow-y:auto;">
     <h3 id="modalAddTitle">Sauvegarder l'aliment</h3>
     <div style="display:grid;grid-template-columns:60px 1fr;gap:10px;margin-bottom:12px;">
       <div class="field" style="margin-bottom:0;"><label>Emoji</label><input type="text" class="itxt" id="newFoodEmoji" placeholder="☕" maxlength="2" style="text-align:center;font-size:18px;"></div>
@@ -2053,14 +2420,23 @@ const FS_SHARED = {
   customPresets: { lsKey:'calorieCustomPresets_v2', field:'items', defaultVal:[] },
   recipes:       { lsKey:'calorieRecipes_v1',       field:'items', defaultVal:[] },
   savedMeals:    { lsKey:'calorieSavedMeals_v1',    field:'items', defaultVal:[] },
+  ideas:         { lsKey:'calorieIdeas_v1',         field:'items', defaultVal:[] },
 };
 const FS_PERSONAL = {
   mealsHistory:  { lsKey:'calorieMealsHistory_v1',  field:'data',  defaultVal:{} },
   profil:        { lsKey:'calorieProfilV1',         field:'data',  defaultVal:{} },
+  defaultMeals:  { lsKey:'calorieDefaultMeals_v1',  field:'data',  defaultVal:{breakfast:[],lunch:[],dinner:[],snack:[]} },
 };
 // settings (goal) is personal, handled separately
 
 let currentFamilyId = null;
+let activePersonalUserId = null;
+let isFamilyOwner = false;
+let familyMembers = [];
+
+function activeUserId(){
+  return activePersonalUserId || (currentUser && currentUser.uid);
+}
 
 // ── Family bootstrap: get or create family for current user
 async function ensureFamily(){
@@ -2129,15 +2505,15 @@ function sharedDocRef(key){
   const { doc, db } = window.firebase;
   return doc(db, 'families', currentFamilyId, 'shared', key);
 }
-function personalDocRef(key){
-  if(!currentFamilyId || !currentUser || !window.firebase) return null;
+function personalDocRef(key,userId=activeUserId()){
+  if(!currentFamilyId || !currentUser || !userId || !window.firebase) return null;
   const { doc, db } = window.firebase;
   // path: families/{fid}/personal/{userId}/items/{key} — matches rule personal/{userId}/{doc=**}
-  return doc(db, 'families', currentFamilyId, 'personal', currentUser.uid, 'items', key);
+  return doc(db, 'families', currentFamilyId, 'personal', userId, 'items', key);
 }
 
 // ── Pull all data
-async function syncPullAll(){
+async function syncPullAll(userId=activeUserId(), options={}){
   if(!currentFamilyId || !window.firebase){return;}
   const { getDoc } = window.firebase;
   console.log('[sync] Pull from Firestore…');
@@ -2152,34 +2528,73 @@ async function syncPullAll(){
     }
     // Personal
     for(const [key, meta] of Object.entries(FS_PERSONAL)){
-      const snap = await getDoc(personalDocRef(key));
+      const snap = await getDoc(personalDocRef(key,userId));
       if(snap.exists()){
         const data = snap.data();
         localStorage.setItem(meta.lsKey, JSON.stringify(data[meta.field] || meta.defaultVal));
+      }else{
+        localStorage.setItem(meta.lsKey, JSON.stringify(meta.defaultVal));
       }
     }
     // Settings (goal) — personal
-    const sSnap = await getDoc(personalDocRef('settings'));
+    const sSnap = await getDoc(personalDocRef('settings',userId));
     if(sSnap.exists() && sSnap.data().goal != null){
       localStorage.setItem('calorieGoal', String(sSnap.data().goal));
+    }else{
+      localStorage.removeItem('calorieGoal');
     }
     console.log('[sync] Pull terminé');
   }catch(e){
     console.error('[sync] Pull error:', e);
+    if(options.throwErrors) throw e;
   }
+}
+
+function refreshPersonalUIFromStorage(){
+  const p = (()=>{try{return JSON.parse(localStorage.getItem('calorieProfilV1')||'{}');}catch{return{};}})();
+  const profilSexe=document.getElementById('profilSexe');
+  const profilAge=document.getElementById('profilAge');
+  const profilPoids=document.getElementById('profilPoids');
+  const profilTaille=document.getElementById('profilTaille');
+  const profilActivite=document.getElementById('profilActivite');
+  if(profilSexe) profilSexe.value=p.sexe||'h';
+  if(profilAge) profilAge.value=p.age||'';
+  if(profilPoids) profilPoids.value=p.poids||'';
+  if(profilTaille) profilTaille.value=p.taille||'';
+  if(profilActivite) profilActivite.value=p.activite||'1.55';
+  document.querySelectorAll('.profil-obj-btn').forEach(b=>b.classList.toggle('active',b.dataset.obj===(p.objectif||'maintain')));
+
+  const goalEl=document.getElementById('goalInput');
+  if(goalEl) goalEl.value=localStorage.getItem('calorieGoal')||'';
+
+  if(typeof calcProfil === 'function') calcProfil();
+  if(typeof updateDateNav === 'function') updateDateNav();
+  if(typeof renderMealSection === 'function') renderMealSection();
+  if(typeof updateGoalBanner === 'function') updateGoalBanner();
+  if(typeof updateNavBadges === 'function') updateNavBadges();
+}
+
+async function switchPersonalContext(userId){
+  if(!currentUser || !currentFamilyId || !userId || userId===activeUserId()) return;
+  const wasSyncEnabled = _syncEnabled;
+  _syncEnabled = false;
+  await syncPullAll(userId,{throwErrors:true});
+  activePersonalUserId = userId;
+  _syncEnabled = wasSyncEnabled;
+  refreshPersonalUIFromStorage();
 }
 
 // ── Push (debounced)
 function syncPush(key, payload){
   if(!_syncEnabled || !currentFamilyId) return;
   if(_saveTimers[key]) clearTimeout(_saveTimers[key]);
+  let ref;
+  if(FS_SHARED[key]) ref = sharedDocRef(key);
+  else ref = personalDocRef(key); // personal data + settings
+  if(!ref) return;
   _saveTimers[key] = setTimeout(async()=>{
     try{
       const { setDoc } = window.firebase;
-      let ref;
-      if(FS_SHARED[key]) ref = sharedDocRef(key);
-      else ref = personalDocRef(key); // personal data + settings
-      if(!ref) return;
       await setDoc(ref, payload, { merge: true });
       console.log('[sync] Push:', key);
     }catch(e){
@@ -2227,6 +2642,9 @@ async function syncMigrateLocalToFirestore(){
 // ── On login: bootstrap family, pull, migrate if needed, refresh UI
 async function onLoginPullAndRefresh(){
   _syncEnabled = false;
+  activePersonalUserId = currentUser ? currentUser.uid : null;
+  isFamilyOwner = false;
+  familyMembers = [];
   try{
     await ensureFamily();
   }catch(e){
@@ -2267,18 +2685,7 @@ async function onLoginPullAndRefresh(){
     if(g) document.getElementById('goalInput').value = g;
     updateGoalBanner();
   }
-  if(typeof calcProfil === 'function'){
-    const p = (()=>{try{return JSON.parse(localStorage.getItem('calorieProfilV1')||'{}');}catch{return{};}})();
-    if(p.sexe) document.getElementById('profilSexe').value=p.sexe;
-    if(p.age)  document.getElementById('profilAge').value=p.age;
-    if(p.poids) document.getElementById('profilPoids').value=p.poids;
-    if(p.taille) document.getElementById('profilTaille').value=p.taille;
-    if(p.activite) document.getElementById('profilActivite').value=p.activite;
-    if(p.objectif){
-      document.querySelectorAll('.profil-obj-btn').forEach(b=>b.classList.toggle('active',b.dataset.obj===p.objectif));
-    }
-    calcProfil();
-  }
+  refreshPersonalUIFromStorage();
   // Update family UI if present
   if(typeof refreshFamilyUI === 'function') refreshFamilyUI();
   console.log('[sync] Prêt — famille', currentFamilyId)
@@ -2352,6 +2759,10 @@ window._onAuthChange = function(user){
     updateUserBadge(null);
     _syncEnabled = false;
     _syncReady = false;
+    currentFamilyId = null;
+    activePersonalUserId = null;
+    isFamilyOwner = false;
+    familyMembers = [];
   }
 };
 
@@ -2562,10 +2973,20 @@ const LS_CUSTOM='calorieCustomPresets_v2';
 const LS_MEALS='calorieMealsHistory_v1'; // {date: {breakfast:[],lunch:[],dinner:[],snack:[]}}
 const LS_RECIPES='calorieRecipes_v1';
 const LS_GOAL='calorieGoal';
+const LS_DEFAULT_MEALS='calorieDefaultMeals_v1';
+const LS_IDEAS='calorieIdeas_v1';
 
 const loadCustom=()=>{try{return JSON.parse(localStorage.getItem(LS_CUSTOM)||'[]');}catch{return[];}};
 const saveCustom=a=>{localStorage.setItem(LS_CUSTOM,JSON.stringify(a));syncPushKey('customPresets');};
-const allPresets=()=>[...DEFAULT_PRESETS,...loadCustom().map(p=>({...p,group:p.group||'Mes aliments'})),...ciqualPresets];
+const allPresets=()=>[...loadCustom().map(p=>({...p,group:p.group||'Mes aliments'})),...DEFAULT_PRESETS,...ciqualPresets];
+const normalizeSearchText=value=>(value||'')
+  .toString()
+  .trim()
+  .toLowerCase()
+  .replace(/[œŒ]/g,'oe')
+  .replace(/[æÆ]/g,'ae')
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g,'');
 function openEditPreset(id){
   const p=loadCustom().find(x=>x.id===id);
   if(!p)return;
@@ -2609,6 +3030,25 @@ const findPresetByName=(name,excludeId)=>{
   const norm=name.trim().toLowerCase();
   return loadCustom().find(p=>p.id!==excludeId && (p.name||'').trim().toLowerCase()===norm)||null;
 };
+function selectedCustomPreset(){
+  return activeId ? loadCustom().find(p=>p.id===activeId) || null : null;
+}
+function resetSaveCurrentButton(){
+  const btn=document.getElementById('saveCurrentBtn');
+  btn.textContent='+ Sauvegarder aliment';
+  btn.style.background='';
+}
+function updateSaveCurrentButtonLabel(){
+  const btn=document.getElementById('saveCurrentBtn');
+  const p=selectedCustomPreset();
+  if(isCreatingNew&&pendingNewName)return;
+  if(p){
+    btn.textContent=p.fixed?'Modifier aliment':'Mettre à jour aliment';
+    btn.style.background='var(--green)';
+  }else{
+    resetSaveCurrentButton();
+  }
+}
 const loadRecipes=()=>{try{return JSON.parse(localStorage.getItem(LS_RECIPES)||'[]');}catch{return[];}};
 const saveRecipes=a=>{localStorage.setItem(LS_RECIPES,JSON.stringify(a));syncPushKey('recipes');};
 
@@ -2619,6 +3059,12 @@ const MEAL_TYPES=['breakfast','lunch','dinner','snack'];
 const MEAL_LABELS={breakfast:'Petit-déj',lunch:'Déjeuner',dinner:'Dîner',snack:'Collation'};
 
 function todayKey(){return new Date().toISOString().slice(0,10);}
+function addDaysKey(dateKey,days){
+  const d=new Date(dateKey+'T12:00:00');
+  d.setDate(d.getDate()+days);
+  return d.toISOString().slice(0,10);
+}
+function tomorrowKey(){return addDaysKey(todayKey(),1);}
 function fmtDateKey(k){
   const d=new Date(k+'T12:00:00');
   return d.toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'});
@@ -2626,10 +3072,17 @@ function fmtDateKey(k){
 
 function loadHistory(){try{return JSON.parse(localStorage.getItem(LS_MEALS)||'{}');}catch{return{};}}
 function saveHistory(h){localStorage.setItem(LS_MEALS,JSON.stringify(h));syncPushKey('mealsHistory');}
+function emptyMealBuckets(){return {breakfast:[],lunch:[],dinner:[],snack:[]};}
+function loadDefaultMeals(){
+  try{return {...emptyMealBuckets(),...JSON.parse(localStorage.getItem(LS_DEFAULT_MEALS)||'{}')};}
+  catch{return emptyMealBuckets();}
+}
+function saveDefaultMeals(data){localStorage.setItem(LS_DEFAULT_MEALS,JSON.stringify({...emptyMealBuckets(),...data}));syncPushKey('defaultMeals');}
+function copyMealItem(item){return {...JSON.parse(JSON.stringify(item)),id:Date.now()+Math.random()};}
 
 function getDayData(dateKey){
   const h=loadHistory();
-  if(!h[dateKey])h[dateKey]={breakfast:[],lunch:[],dinner:[],snack:[]};
+  if(!h[dateKey])h[dateKey]=emptyMealBuckets();
   MEAL_TYPES.forEach(t=>{if(!h[dateKey][t])h[dateKey][t]=[];});
   return h[dateKey];
 }
@@ -2660,14 +3113,26 @@ function macroGoalsFromKcal(goal){
     f:Math.round((goal*0.30)/9)
   };
 }
+function macroGoalRangesFromKcal(goal){
+  if(!goal)return {
+    p:{min:0,max:0,pct:'25-35%'},
+    c:{min:0,max:0,pct:'35-45%'},
+    f:{min:0,max:0,pct:'25-35%'}
+  };
+  return {
+    p:{min:Math.round((goal*0.25)/4),max:Math.round((goal*0.35)/4),pct:'25-35%'},
+    c:{min:Math.round((goal*0.35)/4),max:Math.round((goal*0.45)/4),pct:'35-45%'},
+    f:{min:Math.round((goal*0.25)/9),max:Math.round((goal*0.35)/9),pct:'25-35%'}
+  };
+}
 function weekBounds(dateKey){
   const start=new Date(dateKey+'T12:00:00');
   const day=start.getDay()||7;
   start.setDate(start.getDate()-day+1);
   const end=new Date(start);
   end.setDate(start.getDate()+6);
-  const today=new Date(todayKey()+'T12:00:00');
-  if(end>today)end.setTime(today.getTime());
+  const maxDay=new Date(tomorrowKey()+'T12:00:00');
+  if(end>maxDay)end.setTime(maxDay.getTime());
   return {start,end};
 }
 function formatDateKey(d){
@@ -2701,7 +3166,10 @@ let editingPresetId=null;
 let _membersCache={}; // uid -> {name, initial}
 let viewDateKey=todayKey();
 let activeMealType='breakfast';
+let profileBalancePeriod='week';
 let builderIngredients=[],editingRecipeId=null,bSearchPending=null;
+let builderCategory='meal',recipeSearchQuery='',recipeCategoryFilter='all';
+const RECIPE_CAT_LABELS={breakfast:'🌅 Petit-déj',meal:'🍽 Repas',dessert:'🍰 Dessert',snack:'🍎 Collation'};
 
 // ═══════════════════════════════════════════
 // HELPERS
@@ -2716,6 +3184,30 @@ function parseServingGrams(str){
   const ml=str.match(/\(?\s*(\d+(?:[.,]\d+)?)\s*ml\s*\)?/i);
   if(ml)return parseFloat(ml[1].replace(',','.'));
   return null;
+}
+function dateTargetLabel(dateKey=viewDateKey){
+  if(dateKey===todayKey())return "aujourd'hui";
+  if(dateKey===tomorrowKey())return 'demain';
+  return `le ${fmtDateKey(dateKey)}`;
+}
+function mealAddWarningText(){
+  return viewDateKey===todayKey() ? '' : `Attention : ajout prévu ${dateTargetLabel(viewDateKey)}.`;
+}
+function refreshAddMealDateWarning(){
+  const warn=document.getElementById('addMealDateWarning');
+  if(!warn)return;
+  const text=mealAddWarningText();
+  warn.textContent=text;
+  warn.classList.toggle('visible',!!text);
+}
+function refreshAddMealButtonLabel(){
+  const btn=document.getElementById('addMealBtn');
+  if(!btn || btn.dataset.feedback==='1')return;
+  btn.textContent=viewDateKey===todayKey()?'+ Ajouter au repas':`+ Ajouter au repas ${dateTargetLabel(viewDateKey)}`;
+}
+function refreshMealDateContext(){
+  refreshAddMealDateWarning();
+  refreshAddMealButtonLabel();
 }
 
 // ═══════════════════════════════════════════
@@ -2737,7 +3229,6 @@ function updateGoalBanner(){
   updateGoalNutrient('protein',totals.p,macroGoals.p,'g',1);
   updateGoalNutrient('carb',totals.c,macroGoals.c,'g',1);
   updateGoalNutrient('fat',totals.f,macroGoals.f,'g',1);
-  updateWeeklyDeficit(goal);
 }
 
 function updateGoalNutrient(prefix,consumed,target,unit,decimals){
@@ -2771,47 +3262,65 @@ function updateGoalNutrient(prefix,consumed,target,unit,decimals){
   }
 }
 
-function updateWeeklyDeficit(goal){
-  const el=document.getElementById('weeklyDeficit');
-  if(!goal){
-    el.textContent='—';
-    el.className='weekly-deficit-val neutral';
-    return;
-  }
-  const {start,end}=weekBounds(viewDateKey);
-  let delta=0;
-  for(const d=new Date(start);d<=end;d.setDate(d.getDate()+1)){
-    delta += goal-dayTotals(formatDateKey(d)).kcal;
-  }
-  if(delta>=0){
-    el.textContent=`${Math.round(delta)} kcal`;
-    el.className='weekly-deficit-val ok';
-  }else{
-    el.textContent=`+${Math.round(-delta)} kcal`;
-    el.className='weekly-deficit-val over';
-  }
-}
-
 // ═══════════════════════════════════════════
 // DATE NAVIGATION
 // ═══════════════════════════════════════════
 function updateDateNav(){
   const isToday=viewDateKey===todayKey();
-  document.getElementById('dateNext').disabled=isToday;
+  const isTomorrow=viewDateKey===tomorrowKey();
+  const dateNav=document.querySelector('.date-nav');
+  if(dateNav)dateNav.classList.toggle('has-today-shortcut',!isToday);
+  document.getElementById('dateNext').disabled=isTomorrow;
+  const todayBtn=document.getElementById('dateTodayBtn');
+  if(todayBtn)todayBtn.hidden=isToday;
   const lbl=document.getElementById('dateLabel');
   if(isToday){lbl.textContent='Aujourd\'hui';lbl.className='date-label today';}
+  else if(isTomorrow){lbl.textContent='Demain';lbl.className='date-label';}
   else{lbl.textContent=fmtDateKey(viewDateKey);lbl.className='date-label';}
+  refreshMealDateContext();
 }
 function shiftDate(days){
-  const d=new Date(viewDateKey+'T12:00:00');
-  d.setDate(d.getDate()+days);
-  viewDateKey=d.toISOString().slice(0,10);
+  const nextKey=addDaysKey(viewDateKey,days);
+  if(nextKey>tomorrowKey())return;
+  viewDateKey=nextKey;
   updateDateNav();
   renderMealSection();
   updateGoalBanner();
 }
 document.getElementById('datePrev').addEventListener('click',()=>shiftDate(-1));
 document.getElementById('dateNext').addEventListener('click',()=>shiftDate(1));
+document.getElementById('dateTodayBtn').addEventListener('click',()=>{
+  viewDateKey=todayKey();
+  updateDateNav();
+  renderMealSection();
+  updateGoalBanner();
+});
+function openSwapMeals(){
+  const other=MEAL_TYPES.find(t=>t!==activeMealType) || 'lunch';
+  document.getElementById('swapMealsInfo').textContent=`Jour : ${fmtDateKey(viewDateKey)}`;
+  document.getElementById('swapMealA').value=activeMealType;
+  document.getElementById('swapMealB').value=other;
+  document.getElementById('modalSwapMeals').classList.add('open');
+}
+function closeSwapMeals(){document.getElementById('modalSwapMeals').classList.remove('open');}
+document.getElementById('swapMealsBtn').addEventListener('click',openSwapMeals);
+document.getElementById('confirmSwapMeals').addEventListener('click',()=>{
+  const a=document.getElementById('swapMealA').value;
+  const b=document.getElementById('swapMealB').value;
+  if(a===b){alert('Choisis deux repas différents.');return;}
+  const d=getDayData(viewDateKey);
+  const tmp=d[a]||[];
+  d[a]=d[b]||[];
+  d[b]=tmp;
+  setDayData(viewDateKey,d);
+  activeMealType=a;
+  document.querySelectorAll('.meal-type-tab').forEach(btn=>btn.classList.toggle('active',btn.dataset.mtype===activeMealType));
+  closeSwapMeals();
+  renderMealSection();
+  updateGoalBanner();
+});
+document.getElementById('cancelSwapMeals').addEventListener('click',closeSwapMeals);
+document.getElementById('modalSwapMeals').addEventListener('click',e=>{if(e.target===document.getElementById('modalSwapMeals'))closeSwapMeals();});
 document.getElementById('clearDayBtn').addEventListener('click',()=>{
   if(!confirm('Vider tous les repas de ce jour ?'))return;
   setDayData(viewDateKey,{breakfast:[],lunch:[],dinner:[],snack:[]});
@@ -2843,10 +3352,498 @@ document.querySelectorAll('.meal-type-tab').forEach(btn=>{
 });
 
 // ═══════════════════════════════════════════
+// SHARE REQUESTS
+// ═══════════════════════════════════════════
+let currentShareDraft=null;
+
+function cloneMealForShare(item){
+  const copy=JSON.parse(JSON.stringify(item));
+  delete copy.id;
+  return copy;
+}
+
+function memberName(uid){
+  const m=familyMembers.find(x=>x.id===uid) || _membersCache[uid];
+  if(!m) return uid===currentUser?.uid?'Toi':'Membre';
+  return m.name || m.email || 'Membre';
+}
+
+function escapeHtml(value){
+  return (value||'').toString().replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function shareItemQtyLabel(item){
+  if(isPortionTrackedItem(item)){
+    const count=item.portionCount||1;
+    const modeLabel=item.qtyMode==='cooked'?'cuits':'';
+    return `${fmt(count,count%1?1:0)} × ${fmt(item.portionSizeG,0)}g${modeLabel?' '+modeLabel:''}`;
+  }
+  if(item.fixed){
+    const units=item.fixedUnits||1;
+    return `${fmt(units,units%1?1:0)} ${item.fixedLabel||'portion'}${units>1&&!item.fixedLabel?'s':''}`;
+  }
+  const qtyMode=item.qtyMode||'raw';
+  if(qtyMode==='cooked'&&item.cookedG!=null) return `${fmt(item.cookedG,0)}g cuits`;
+  if(qtyMode==='kcal') return `${fmt(item.kcal,0)} kcal visées`;
+  return `${fmt(item.rawG,0)}g${item.noCook?'':' crus'}`;
+}
+
+function sameMealWeight(a,b){
+  const av=Number(a),bv=Number(b);
+  return Number.isFinite(av)&&Number.isFinite(bv)&&Math.abs(Math.round(av*10)/10-Math.round(bv*10)/10)<=0.1;
+}
+
+function isPortionTrackedItem(item){
+  if(!item||item.qtyInputMode!=='portions'||!item.portionSizeG)return false;
+  const count=Number(item.portionCount)||1;
+  const expected=Math.round(Number(item.portionSizeG)*count*10)/10;
+  const actual=item.qtyMode==='cooked'&&item.cookedG!=null?item.cookedG:item.rawG;
+  return sameMealWeight(actual,expected);
+}
+
+function shareRequestSummary(req){
+  const items=req.items||[];
+  const kcal=items.reduce((sum,item)=>sum+(Number(item.kcal)||0),0);
+  const macros={
+    p:items.reduce((sum,item)=>sum+(Number(item.p)||0),0),
+    c:items.reduce((sum,item)=>sum+(Number(item.c)||0),0),
+    f:items.reduce((sum,item)=>sum+(Number(item.f)||0),0)
+  };
+  return `${fmt(kcal,0)} kcal · P ${fmt(macros.p)}g · G ${fmt(macros.c)}g · L ${fmt(macros.f)}g`;
+}
+
+function shareRequestDetailsHtml(req){
+  const items=req.items||[];
+  const visible=items.slice(0,4).map(item=>
+    `<div style="font-size:11px;color:var(--text-muted);line-height:1.35;">${escapeHtml(item.emoji||'')} ${escapeHtml(item.name||'Aliment')} · ${escapeHtml(shareItemQtyLabel(item))} · ${fmt(item.kcal,0)} kcal</div>`
+  ).join('');
+  const more=items.length>4?`<div style="font-size:11px;color:var(--text-dim);line-height:1.35;">+ ${items.length-4} autre(s) aliment(s)</div>`:'';
+  return visible+more;
+}
+
+function shareRequestsRef(){
+  return sharedDocRef('shareRequests');
+}
+
+async function loadAllShareRequests(){
+  if(!_syncEnabled || !currentFamilyId || !window.firebase) return [];
+  const { getDoc } = window.firebase;
+  const snap=await getDoc(shareRequestsRef());
+  if(!snap.exists()) return [];
+  const data=snap.data();
+  return Array.isArray(data.items)?data.items:[];
+}
+
+async function saveAllShareRequests(items){
+  const { setDoc } = window.firebase;
+  await setDoc(shareRequestsRef(), { items }, { merge:true });
+}
+
+async function openShareModal(type, sourceItems){
+  if(!_syncEnabled || !currentFamilyId || !currentUser){
+    alert('Connexion famille requise pour partager.');
+    return;
+  }
+  await refreshFamilyUI();
+  const senderId=activeUserId();
+  const targets=familyMembers.filter(m=>m.id!==senderId);
+  if(!targets.length){
+    alert('Aucun autre membre dans la famille.');
+    return;
+  }
+  const items=sourceItems.map(cloneMealForShare);
+  currentShareDraft={type,items,dateKey:viewDateKey,mealType:activeMealType,fromUid:senderId};
+  const select=document.getElementById('shareMealTarget');
+  select.innerHTML='';
+  targets.forEach(m=>{
+    const opt=document.createElement('option');
+    opt.value=m.id;
+    opt.textContent=m.name||m.email||'Membre';
+    select.appendChild(opt);
+  });
+  document.getElementById('shareMealTitle').textContent=type==='meal'?'Partager le repas':'Partager l\'aliment';
+  document.getElementById('shareMealInfo').textContent=
+    `${type==='meal'?items.length+' aliment(s)':items[0]?.name||'Aliment'} · ${MEAL_LABELS[activeMealType]} · ${fmtDateKey(viewDateKey)}`;
+  document.getElementById('shareMealStatus').textContent='';
+  document.getElementById('modalShareMeal').classList.add('open');
+}
+
+async function sendShareRequest(){
+  if(!currentShareDraft || !window.firebase) return;
+  const targetUid=document.getElementById('shareMealTarget').value;
+  const status=document.getElementById('shareMealStatus');
+  if(!targetUid){return;}
+  status.style.color='var(--text-muted)';
+  status.innerHTML='<span class="spinner"></span>Envoi…';
+  const reqId='share_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
+  const now=new Date().toISOString();
+  const req={
+    ...currentShareDraft,
+    toUid:targetUid,
+    createdByUid:currentUser.uid,
+    fromName:memberName(currentShareDraft.fromUid),
+    toName:memberName(targetUid),
+    status:'pending',
+    createdAt:now,
+    updatedAt:now
+  };
+  try{
+    const requests=await loadAllShareRequests();
+    requests.push({id:reqId,...req});
+    await saveAllShareRequests(requests);
+    status.style.color='var(--green)';
+    status.textContent='Demande envoyée.';
+    setTimeout(()=>{
+      document.getElementById('modalShareMeal').classList.remove('open');
+      currentShareDraft=null;
+    },700);
+  }catch(e){
+    console.error('[share] send',e);
+    status.style.color='var(--red)';
+    status.textContent='Erreur lors de l\'envoi : '+(e.code||e.message||'inconnue');
+  }
+}
+
+async function loadIncomingShareRequests(){
+  if(!_syncEnabled || !currentFamilyId || !window.firebase || !activeUserId()) return [];
+  const requests=await loadAllShareRequests();
+  return requests
+    .filter(r=>r.toUid===activeUserId()&&r.status==='pending')
+    .sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
+}
+
+async function refreshShareInbox(){
+  const card=document.getElementById('shareInboxCard');
+  const list=document.getElementById('shareInboxList');
+  const countEl=document.getElementById('shareInboxCount');
+  if(!card||!list||!countEl) return;
+  if(!_syncEnabled || !currentFamilyId){
+    card.style.display='none';
+    return;
+  }
+  try{
+    const requests=await loadIncomingShareRequests();
+    if(!requests.length){
+      card.style.display='none';
+      return;
+    }
+    card.style.display='';
+    countEl.textContent='('+requests.length+')';
+    list.innerHTML='';
+    requests.forEach(req=>{
+      const row=document.createElement('div');
+      row.style.cssText='display:flex;align-items:flex-start;gap:10px;padding:10px;background:var(--surface2);border-radius:var(--radius-sm);';
+      const label=req.type==='meal'?`Repas partagé · ${req.items?.length||0} aliment(s)`:'Aliment partagé';
+      row.innerHTML=`
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:600;color:var(--text);">${label}</div>
+          <div style="font-size:11px;color:var(--text-dim);">De ${req.fromName||memberName(req.fromUid)} · ${MEAL_LABELS[req.mealType]||'Repas'} · ${fmtDateKey(req.dateKey)}</div>
+          <div style="font-size:11px;color:var(--accent);font-weight:600;margin-top:5px;">${shareRequestSummary(req)}</div>
+          <div style="margin-top:5px;">${shareRequestDetailsHtml(req)}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;flex:none;">
+          <button class="btn-accent accept-share-btn" data-id="${req.id}" style="font-size:11px;padding:7px 10px;">Accepter</button>
+          <button class="btn-ghost reject-share-btn" data-id="${req.id}" style="font-size:11px;padding:7px 10px;">Refuser</button>
+        </div>
+      `;
+      list.appendChild(row);
+    });
+    list.querySelectorAll('.accept-share-btn').forEach(btn=>btn.addEventListener('click',()=>acceptShareRequest(requests.find(r=>r.id===btn.dataset.id))));
+    list.querySelectorAll('.reject-share-btn').forEach(btn=>btn.addEventListener('click',()=>rejectShareRequest(requests.find(r=>r.id===btn.dataset.id))));
+  }catch(e){
+    console.error('[share] inbox',e);
+    card.style.display='none';
+  }
+}
+
+async function updateShareRequestStatus(req,status){
+  const requests=await loadAllShareRequests();
+  const idx=requests.findIndex(r=>r.id===req.id);
+  if(idx<0) return;
+  requests[idx]={
+    ...requests[idx],
+    status,
+    updatedAt:new Date().toISOString(),
+    handledByUid:currentUser.uid
+  };
+  await saveAllShareRequests(requests);
+}
+
+async function pushMealsHistoryNow(){
+  if(!_syncEnabled || !currentFamilyId || !window.firebase) return;
+  const raw=localStorage.getItem(LS_MEALS);
+  const data=raw?JSON.parse(raw):{};
+  const { setDoc } = window.firebase;
+  await setDoc(personalDocRef('mealsHistory'), { data }, { merge:true });
+}
+
+async function acceptShareRequest(req){
+  if(!req || req.toUid!==activeUserId()) return;
+  let added=false;
+  try{
+    const d=getDayData(req.dateKey);
+    const targetType=req.mealType||activeMealType;
+    if(!d[targetType]) d[targetType]=[];
+    (req.items||[]).forEach(item=>{
+      d[targetType].push({
+        ...cloneMealForShare(item),
+        id:Date.now()+Math.random(),
+        sharedFrom:req.fromUid,
+        shareRequestId:req.id
+      });
+    });
+    setDayData(req.dateKey,d);
+    added=true;
+    viewDateKey=req.dateKey;
+    updateDateNav();
+    activeMealType=targetType;
+    document.querySelectorAll('.meal-type-tab').forEach(b=>b.classList.toggle('active',b.dataset.mtype===targetType));
+    renderMealSection();
+    updateGoalBanner();
+    try{
+      await updateShareRequestStatus(req,'accepted');
+      refreshShareInbox();
+    }catch(e){
+      console.error('[share] accept status',e);
+      alert('Aliment ajouté, mais impossible de clôturer la demande : '+(e.code||e.message||'erreur inconnue'));
+    }
+  }catch(e){
+    console.error('[share] accept',e);
+    alert((added?'Aliment ajouté, mais erreur après ajout : ':'Impossible d\'accepter cette demande : ')+(e.code||e.message||'erreur inconnue'));
+  }
+}
+
+async function rejectShareRequest(req){
+  if(!req || req.toUid!==activeUserId()) return;
+  try{
+    await updateShareRequestStatus(req,'rejected');
+    refreshShareInbox();
+  }catch(e){
+    console.error('[share] reject',e);
+    alert('Impossible de refuser cette demande.');
+  }
+}
+
+function mealItemDisplay(item){
+  const isFixed=item.fixed===true;
+  const qtyMode=item.qtyMode||'raw';
+  if(isPortionTrackedItem(item)){
+    return {
+      isFixed:false,
+      qtyMode,
+      subLabel:qtyMode==='cooked'?'portions cuites':'portions',
+      value:item.portionCount||1,
+      unitLabel:'portion',
+      step:1,
+      display:shareItemQtyLabel(item)
+    };
+  }
+  const subLabel=isFixed?(item.fixedLabel||'portion'):qtyMode==='cooked'?'cuit':qtyMode==='kcal'?'kcal visées':(item.noCook?'':'cru');
+  if(isFixed){
+    return {
+      isFixed, qtyMode, subLabel,
+      value:item.fixedUnits||1,
+      unitLabel:item.fixedLabel||'×',
+      step:1,
+      display:shareItemQtyLabel(item)
+    };
+  }
+  if(qtyMode==='cooked'&&item.cookedG!=null){
+    return {isFixed,qtyMode,subLabel,value:item.cookedG,unitLabel:'g',step:10,display:shareItemQtyLabel(item)};
+  }
+  if(qtyMode==='kcal'){
+    return {isFixed,qtyMode,subLabel,value:item.kcal,unitLabel:'kcal',step:25,display:shareItemQtyLabel(item)};
+  }
+  return {isFixed,qtyMode,subLabel,value:item.rawG,unitLabel:'g',step:10,display:shareItemQtyLabel(item)};
+}
+
+function updateMealItemQuantity(idx,value){
+  const v=parseFloat(value);
+  if(!v||v<=0)return;
+  const d=getDayData(viewDateKey);
+  const it=d[activeMealType][idx];
+  if(!it)return;
+  const isFixed=it.fixed===true;
+  if(isFixed){
+    it.fixedUnits=v;
+    const kcalUnit=it.fixedKcalPerUnit||it.fixedKcal||it.kcal||0;
+    it.kcal=Math.round(v*kcalUnit*10)/10;
+    if(it.fixedPPerUnit!=null) it.p=Math.round(v*it.fixedPPerUnit*100)/100;
+    if(it.fixedCPerUnit!=null) it.c=Math.round(v*it.fixedCPerUnit*100)/100;
+    if(it.fixedFPerUnit!=null) it.f=Math.round(v*it.fixedFPerUnit*100)/100;
+  }else{
+    const qtyMode=it.qtyMode||'raw';
+    const oldRawG=Number(it.rawG)||0;
+    const kpg100=it.kcalPer100!=null?it.kcalPer100/100:(oldRawG>0?it.kcal/oldRawG:0);
+    let newRawG;
+    if(isPortionTrackedItem(it)){
+      it.portionCount=v;
+      const totalQty=Math.round(it.portionSizeG*v*10)/10;
+      if(qtyMode==='cooked'&&it.ratio){
+        it.cookedG=totalQty;
+        newRawG=totalQty/it.ratio;
+      }else{
+        newRawG=totalQty;
+      }
+    }else{
+      delete it.qtyInputMode;
+      delete it.portionSizeG;
+      delete it.portionCount;
+      if(qtyMode==='cooked'&&it.ratio){newRawG=v/it.ratio;}
+      else if(qtyMode==='kcal'){newRawG=kpg100>0?v/kpg100:oldRawG;}
+      else{newRawG=v;}
+    }
+    it.rawG=Math.round(newRawG*10)/10;
+    it.kcal=qtyMode==='kcal'?Math.round(v*10)/10:Math.round(newRawG*kpg100*10)/10;
+    if(it.ratio) it.cookedG=Math.round(newRawG*it.ratio*10)/10;
+    if(oldRawG>0){
+      if(it.p!=null) it.p=Math.round(it.p/oldRawG*newRawG*100)/100;
+      if(it.c!=null) it.c=Math.round(it.c/oldRawG*newRawG*100)/100;
+      if(it.f!=null) it.f=Math.round(it.f/oldRawG*newRawG*100)/100;
+    }
+  }
+  setDayData(viewDateKey,d);
+  renderMealSection();
+  updateGoalBanner();
+}
+
+function adjustMealItemQuantity(idx,delta){
+  const item=getDayData(viewDateKey)[activeMealType][idx];
+  if(!item)return;
+  const meta=mealItemDisplay(item);
+  const min=meta.isFixed?1:meta.unitLabel==='kcal'?25:1;
+  const next=Math.max(min,(parseFloat(meta.value)||0)+delta);
+  updateMealItemQuantity(idx,next);
+}
+
+function deleteMealItem(idx){
+  const d=getDayData(viewDateKey);
+  d[activeMealType].splice(idx,1);
+  setDayData(viewDateKey,d);
+  renderMealSection();
+  updateGoalBanner();
+}
+
+function buildMealMobileSummary(items,total){
+  const summary=document.createElement('div');
+  summary.className='meal-mobile-summary';
+  const tRStr=total.rawG>0?fmt(total.rawG,0)+'g':'—';
+  summary.innerHTML=`
+    <div class="meal-mobile-summary-head">
+      <div>
+        <div class="meal-mobile-summary-label">${MEAL_LABELS[activeMealType]}</div>
+        <div class="meal-mobile-summary-kcal">${fmt(total.kcal,0)} kcal</div>
+      </div>
+      <div class="meal-mobile-summary-qty">${items.length} aliment(s)<br>${tRStr}</div>
+    </div>
+    <div class="meal-mobile-macros">
+      <div class="meal-mobile-macro"><span>Protéines</span><strong>${fmt(total.p)}g</strong></div>
+      <div class="meal-mobile-macro"><span>Glucides</span><strong>${fmt(total.c)}g</strong></div>
+      <div class="meal-mobile-macro"><span>Lipides</span><strong>${fmt(total.f)}g</strong></div>
+    </div>`;
+  return summary;
+}
+
+function buildMealMobileCard(item,idx){
+  const meta=mealItemDisplay(item);
+  const card=document.createElement('div');
+  card.className='meal-mobile-card fade-in';
+
+  const head=document.createElement('div');
+  head.className='meal-mobile-card-head';
+  const title=document.createElement('div');
+  const name=document.createElement('div');
+  name.className='meal-mobile-name';
+  name.textContent=(item.emoji?item.emoji+' ':'')+(item.name||'Aliment');
+  const sub=document.createElement('div');
+  sub.className='meal-mobile-sub';
+  sub.textContent=meta.display+(meta.subLabel?' · '+meta.subLabel:'');
+  title.appendChild(name);title.appendChild(sub);
+  const kcal=document.createElement('div');
+  kcal.className='meal-mobile-kcal';
+  kcal.innerHTML=`${fmt(item.kcal,0)}<span>kcal</span>`;
+  head.appendChild(title);head.appendChild(kcal);
+  card.appendChild(head);
+
+  const macros=document.createElement('div');
+  macros.className='meal-mobile-card-macros';
+  macros.innerHTML=`<span class="pv">P ${item.p!=null?fmt(item.p)+'g':'—'}</span><span class="cv">G ${item.c!=null?fmt(item.c)+'g':'—'}</span><span class="fv">L ${item.f!=null?fmt(item.f)+'g':'—'}</span>`;
+  card.appendChild(macros);
+
+  const actions=document.createElement('div');
+  actions.className='meal-mobile-actions';
+  const minus=document.createElement('button');
+  minus.type='button';minus.className='meal-mobile-step';minus.textContent='−';
+  minus.addEventListener('click',()=>adjustMealItemQuantity(idx,-meta.step));
+  const qty=document.createElement('input');
+  qty.type='number';qty.className='meal-mobile-qty';qty.min=meta.isFixed?1:1;qty.step=meta.step;qty.value=meta.unitLabel==='kcal'?Math.round(meta.value):Math.round(meta.value*10)/10;
+  qty.addEventListener('change',()=>updateMealItemQuantity(idx,qty.value));
+  const plus=document.createElement('button');
+  plus.type='button';plus.className='meal-mobile-step';plus.textContent='+';
+  plus.addEventListener('click',()=>adjustMealItemQuantity(idx,meta.step));
+  const share=document.createElement('button');
+  share.type='button';share.className='meal-mobile-share';share.textContent='↗';share.title='Partager';
+  share.addEventListener('click',()=>openShareModal('item',[item]));
+  const del=document.createElement('button');
+  del.type='button';del.className='meal-mobile-delete';del.textContent='×';del.title='Supprimer';
+  del.addEventListener('click',()=>deleteMealItem(idx));
+  actions.appendChild(minus);actions.appendChild(qty);actions.appendChild(plus);
+  card.appendChild(actions);
+  const tools=buildMealItemTools(idx);
+  tools.appendChild(share);tools.appendChild(del);
+  card.appendChild(tools);
+  return card;
+}
+
+function buildMealItemTools(idx){
+  const row=document.createElement('div');
+  row.className='meal-item-tools';
+  const source=activeMealType,date=viewDateKey;
+  const items=getDayData(date)[source];
+  const persist=data=>{setDayData(date,data);renderMealSection();updateGoalBanner();updateNavBadges();};
+  [-1,1].forEach(offset=>{
+    const button=document.createElement('button');
+    button.type='button';button.className='btn-ghost';
+    button.textContent=offset<0?'↑':'↓';
+    button.title=offset<0?'Monter cet aliment':'Descendre cet aliment';
+    button.setAttribute('aria-label',button.title);
+    button.style.cssText='min-width:44px;min-height:44px;padding:6px;';
+    button.disabled=idx+offset<0||idx+offset>=items.length;
+    button.onclick=()=>{const data=getDayData(date);const list=data[source];[list[idx],list[idx+offset]]=[list[idx+offset],list[idx]];persist(data);};
+    row.appendChild(button);
+  });
+  const menu=document.createElement('select');
+  menu.setAttribute('aria-label','Actions pour '+items[idx].name);
+  menu.add(new Option('Actions…',''));
+  Object.entries(MEAL_LABELS).forEach(([key,label])=>{
+    if(key!==source)menu.add(new Option('Déplacer vers '+label,'move:'+key));
+    menu.add(new Option('Par défaut : '+label,'default:'+key));
+  });
+  menu.onchange=()=>{
+    const [action,target]=menu.value.split(':');
+    if(!target)return;
+    const data=getDayData(date),item=data[source][idx];
+    if(action==='move'){
+      data[source].splice(idx,1);data[target].push(item);persist(data);
+    }else{
+      const defaults=loadDefaultMeals();
+      const existing=defaults[target].findIndex(entry=>entry.name===item.name);
+      const saved=cloneMealForShare(item);
+      if(existing<0)defaults[target].push(saved);else defaults[target][existing]=saved;
+      saveDefaultMeals(defaults);refreshDefaultMealButtons();
+      menu.options[0].textContent='Défaut enregistré';menu.value='';
+    }
+  };
+  row.appendChild(menu);return row;
+}
+
+// ═══════════════════════════════════════════
 // MEAL RENDER
 // ═══════════════════════════════════════════
 function renderMealSection(){
   renderMealTypeBadges();
+  refreshShareInbox();
+  refreshDefaultMealButtons();
   const data=getDayData(viewDateKey);
   const items=data[activeMealType];
   const container=document.getElementById('mealContent');
@@ -2881,57 +3878,24 @@ function renderMealSection(){
 
   items.forEach((item,idx)=>{
     const tr=document.createElement('tr');tr.className='fade-in';
-    const isFixed=item.fixed===true;
-    // kcal per unit: for fixed items = fixedKcal per portion; for normal = kcal/rawG
-    const kcalPerUnit = isFixed
-      ? (item.fixedKcalPerUnit || item.kcal) // fixedKcal stored at add time
-      : (item.rawG>0 ? item.kcal/item.rawG : 0);
+    const meta=mealItemDisplay(item);
 
     // name cell
     const nameTd=document.createElement('td');
-    const subLabel = isFixed ? (item.fixedLabel||'portion') : (item.noCook?'':'cru');
-    nameTd.innerHTML=`<div class="meal-name-cell"><span class="meal-emoji">${item.emoji||''}</span><div><div class="meal-item-name">${item.name}</div><div class="meal-sub">${subLabel}</div></div></div>`;
+    nameTd.innerHTML=`<div class="meal-name-cell"><span class="meal-emoji">${escapeHtml(item.emoji||'')}</span><div><div class="meal-item-name">${escapeHtml(item.name||'Aliment')}</div><div class="meal-sub">${escapeHtml(meta.display+(meta.subLabel?' · '+meta.subLabel:''))}</div></div></div>`;
 
     // qty cell — inline editable
     const qtyTd=document.createElement('td');qtyTd.style.textAlign='center';
     const qtyIn=document.createElement('input');qtyIn.type='number';qtyIn.className='meal-qty-input';
-    qtyIn.min=1;qtyIn.step=1;
-
-    if(isFixed){
-      // Show units (1, 2, 3…)
-      qtyIn.value=item.fixedUnits||1;
-      qtyIn.addEventListener('change',()=>{
-        const v=parseFloat(qtyIn.value);if(!v||v<=0)return;
-        const d=getDayData(viewDateKey);
-        const it=d[activeMealType][idx];
-        it.fixedUnits=v;
-        it.kcal=Math.round(v*(it.fixedKcalPerUnit||it.kcal)*10)/10;
-        if(it.fixedPPerUnit!=null) it.p=Math.round(v*it.fixedPPerUnit*100)/100;
-        if(it.fixedCPerUnit!=null) it.c=Math.round(v*it.fixedCPerUnit*100)/100;
-        if(it.fixedFPerUnit!=null) it.f=Math.round(v*it.fixedFPerUnit*100)/100;
-        setDayData(viewDateKey,d);renderMealSection();updateGoalBanner();
-      });
-      const unitSpan=document.createElement('span');
-      const ul=item.fixedLabel||'×';
-      unitSpan.textContent=ul.length>6?'×':ul;
-      unitSpan.style.cssText='font-size:9px;color:var(--text-dim);margin-left:3px;';
-      qtyTd.appendChild(qtyIn);qtyTd.appendChild(unitSpan);
-    } else {
-      qtyIn.value=item.rawG;
-      qtyIn.addEventListener('change',()=>{
-        const v=parseFloat(qtyIn.value);if(!v||v<=0)return;
-        const d=getDayData(viewDateKey);
-        const it=d[activeMealType][idx];
-        it.rawG=v;
-        it.kcal=Math.round(v*kcalPerUnit*10)/10;
-        if(item.p!=null) it.p=Math.round(item.p/item.rawG*v*100)/100;
-        if(item.c!=null) it.c=Math.round(item.c/item.rawG*v*100)/100;
-        if(item.f!=null) it.f=Math.round(item.f/item.rawG*v*100)/100;
-        setDayData(viewDateKey,d);renderMealSection();updateGoalBanner();
-      });
-      const unitSpan=document.createElement('span');unitSpan.textContent='g';unitSpan.style.cssText='font-size:9px;color:var(--text-dim);margin-left:3px;';
-      qtyTd.appendChild(qtyIn);qtyTd.appendChild(unitSpan);
-    }
+    qtyIn.min=meta.unitLabel==='kcal'?25:1;
+    qtyIn.step=meta.step;
+    qtyIn.value=meta.unitLabel==='kcal'?Math.round(meta.value):Math.round(meta.value*10)/10;
+    qtyIn.addEventListener('change',()=>updateMealItemQuantity(idx,qtyIn.value));
+    const unitSpan=document.createElement('span');
+    const label=meta.unitLabel==='portion'?'×':meta.unitLabel;
+    unitSpan.textContent=label.length>6?'×':label;
+    unitSpan.style.cssText='font-size:9px;color:var(--text-dim);margin-left:3px;';
+    qtyTd.appendChild(qtyIn);qtyTd.appendChild(unitSpan);
 
         const kcalTd=document.createElement('td');kcalTd.className='kv';kcalTd.textContent=fmt(item.kcal,0);
     const pTd=document.createElement('td');pTd.className='pv';pTd.textContent=item.p!=null?fmt(item.p):'—';
@@ -2939,12 +3903,13 @@ function renderMealSection(){
     const fTd=document.createElement('td');fTd.className='fv';fTd.textContent=item.f!=null?fmt(item.f):'—';
 
     const delTd=document.createElement('td');
+    const shareBtn=document.createElement('button');shareBtn.className='share-row';shareBtn.textContent='↗';shareBtn.title='Partager';
+    shareBtn.addEventListener('click',()=>openShareModal('item',[item]));
     const delBtn=document.createElement('button');delBtn.className='del-row';delBtn.textContent='×';
-    delBtn.addEventListener('click',()=>{
-      const d=getDayData(viewDateKey);d[activeMealType].splice(idx,1);setDayData(viewDateKey,d);
-      renderMealSection();updateGoalBanner();
-    });
-    delTd.appendChild(delBtn);
+    delBtn.addEventListener('click',()=>deleteMealItem(idx));
+    const tools=buildMealItemTools(idx);
+    tools.appendChild(shareBtn);tools.appendChild(delBtn);
+    delTd.appendChild(tools);
 
     tr.appendChild(nameTd);tr.appendChild(qtyTd);tr.appendChild(kcalTd);tr.appendChild(pTd);tr.appendChild(cTd);tr.appendChild(fTd);tr.appendChild(delTd);
     tbody.appendChild(tr);
@@ -2955,6 +3920,7 @@ function renderMealSection(){
   const tC=items.reduce((a,i)=>a+(Number(i.c)||0),0);
   const tF=items.reduce((a,i)=>a+(Number(i.f)||0),0);
   const tR=items.reduce((a,i)=>a+(i.fixed?0:(Number(i.rawG)||0)),0);
+  const totals={kcal:tK,p:tP,c:tC,f:tF,rawG:tR};
   const tRStr=tR>0?fmt(tR,0)+'g':'—';
   const tfootTr=document.createElement('tr');tfootTr.className='meal-totals-row';
   tfootTr.innerHTML=`
@@ -2971,18 +3937,28 @@ function renderMealSection(){
   card.appendChild(table);
   container.appendChild(card);
 
+  const mobileList=document.createElement('div');
+  mobileList.className='meal-mobile-list';
+  mobileList.appendChild(buildMealMobileSummary(items,totals));
+  items.forEach((item,idx)=>mobileList.appendChild(buildMealMobileCard(item,idx)));
+  container.appendChild(mobileList);
+
   // action bar: load saved + dup meal
   const actionBar=document.createElement('div');
-  actionBar.style.cssText='display:flex;gap:8px;margin-top:8px;';
+  actionBar.className='meal-action-bar';
   const loadBtn=document.createElement('button');
-  loadBtn.className='btn-ghost';loadBtn.style.cssText='flex:1;font-size:9px;padding:7px;';
+  loadBtn.className='btn-ghost secondary-meal-action';
   loadBtn.textContent='📥 Charger un repas';
   loadBtn.addEventListener('click',openSavedMeals);
   const dupBtn=document.createElement('button');
-  dupBtn.className='btn-ghost';dupBtn.style.cssText='flex:1;font-size:9px;padding:7px;';
+  dupBtn.className='btn-ghost secondary-meal-action';
   dupBtn.textContent='⧉ Copier ce repas';
   dupBtn.addEventListener('click',()=>openDupMeal(activeMealType));
-  actionBar.appendChild(loadBtn);actionBar.appendChild(dupBtn);
+  const shareMealBtn=document.createElement('button');
+  shareMealBtn.className='btn-accent share-meal-action';
+  shareMealBtn.textContent='↗ Partager ce repas';
+  shareMealBtn.addEventListener('click',()=>openShareModal('meal',items));
+  actionBar.appendChild(loadBtn);actionBar.appendChild(dupBtn);actionBar.appendChild(shareMealBtn);
   container.appendChild(actionBar);
 }
 
@@ -2993,44 +3969,29 @@ document.getElementById('addMealBtn').addEventListener('click',e=>{
   if(e.target.tagName==='SELECT')return;
   if(!lastResult)return;
   const mtype=document.getElementById('addMealTypeSelect').value;
+  const addedLabel=MEAL_LABELS[mtype]||'repas';
   const d=getDayData(viewDateKey);
-  d[mtype].push({...lastResult,id:Date.now()});
+  d[mtype].push(copyMealItem(lastResult));
   setDayData(viewDateKey,d);
   activeMealType=mtype;
   document.querySelectorAll('.meal-type-tab').forEach(b=>b.classList.toggle('active',b.dataset.mtype===mtype));
+  renderMealTypeBadges();
+  updateNavBadges();
   renderMealSection();updateGoalBanner();
 
   // feedback visuel
   const btn=document.getElementById('addMealBtn');
-  const origHTML=btn.innerHTML;
-  btn.querySelector('select').style.display='none';
-  btn.childNodes[0].textContent='\u2713 Ajout\u00e9  ';
-  btn.style.color='var(--green)';btn.style.borderColor='var(--green)';
-  setTimeout(()=>{
-    btn.innerHTML=origHTML;btn.style.color='';btn.style.borderColor='';
-    btn.querySelector('select').addEventListener('click',e=>e.stopPropagation());
-  },900);
+  btn.dataset.feedback='1';
+  btn.textContent=`\u2713 Ajout\u00e9 au ${addedLabel}`;
+  btn.style.color='var(--green)';
+  btn.style.borderColor='var(--green)';
 
-  // ── reset calculateur
-  ['kcalPer100','rawRef','cookedRef','queryValue','protRef','carbRef','fatRef',
-   'calcPortionSize','calcPortionCount'].forEach(id=>{
-    const el=document.getElementById(id); if(el) el.value='';
-  });
-  document.getElementById('calcPortionPreview').textContent='';
-  activeId=null; lastResult=null;
-  hidePortionRow();
-  clearResults();
-  document.getElementById('addMealBtn').disabled=true;
-  document.getElementById('filledKcalTag').innerHTML='';
-  document.getElementById('filledMacroTag').innerHTML='';
-  document.getElementById('errorMsg').textContent='';
-  updateRatio();
-  // reset combobox
-  if(presetSelectedDisplay){ presetSelectedDisplay.style.display='none'; }
-  if(presetSearchInput){ presetSearchInput.value=''; }
-  document.getElementById('searchResults').innerHTML='';
-  document.getElementById('searchStatus').textContent='';
-  document.getElementById('searchInput').value='';
+  setTimeout(()=>{
+    btn.dataset.feedback='';
+    btn.style.color='';
+    btn.style.borderColor='';
+    refreshAddMealButtonLabel();
+  },1000);
 });
 // prevent select click from firing add
 document.getElementById('addMealTypeSelect').addEventListener('click',e=>e.stopPropagation());
@@ -3106,14 +4067,48 @@ function updateCalcPortionPreview(){
 document.getElementById('calcPortionSize').addEventListener('input',updateCalcPortionPreview);
 document.getElementById('calcPortionCount').addEventListener('input',updateCalcPortionPreview);
 
+function portionMetaFromInputs(size,count,totalG){
+  if(!(size>0)||!(count>0)||!(totalG>0))return {};
+  const expected=Math.round(size*count*10)/10;
+  if(!sameMealWeight(totalG,expected))return {};
+  return {qtyInputMode:'portions',portionSizeG:Math.round(size*10)/10,portionCount:Math.round(count*10)/10};
+}
+
+function servingGFromCalculatorForSave(fallback=null){
+  const size=parseFloat(document.getElementById('calcPortionSize').value);
+  if(calcQtyMode==='portions'&&size>0)return Math.round(size*10)/10;
+  if(currentServingG>0)return Math.round(currentServingG*10)/10;
+  return fallback;
+}
+
+function currentCalcPortionMeta(){
+  const totalG=parseFloat(queryValueEl.value);
+  if(calcQtyMode==='portions'){
+    const size=parseFloat(document.getElementById('calcPortionSize').value);
+    const count=parseFloat(document.getElementById('calcPortionCount').value)||1;
+    return portionMetaFromInputs(size,count,totalG);
+  }
+  if(currentServingG&&document.getElementById('portionRow').style.display!=='none'){
+    const count=parseFloat(portionCountEl.value)||1;
+    return portionMetaFromInputs(currentServingG,count,totalG);
+  }
+  return {};
+}
+
 // ═══════════════════════════════════════════
 // OFF SEARCH
 // ═══════════════════════════════════════════
 async function searchOFF(query){
-  const url=`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=50&lc=fr&fields=product_name,brands,nutriments,serving_size,serving_quantity,code`;
-  const res=await fetch(url);if(!res.ok)throw new Error('HTTP '+res.status);
-  const data=await res.json();
-  return(data.products||[]).filter(p=>{const k=p.nutriments?.['energy-kcal_100g']??p.nutriments?.['energy-kcal'];return k!=null&&k>0&&p.product_name?.trim();});
+  const base=normalizeSearchText(query);
+  const variants=[query.trim(),base,base.replace(/oe/g,'œ')].filter((v,i,a)=>v&&a.indexOf(v)===i);
+  for(const term of variants){
+    const url=`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(term)}&search_simple=1&action=process&json=1&page_size=50&lc=fr&fields=product_name,brands,nutriments,serving_size,serving_quantity,code`;
+    const res=await fetch(url);if(!res.ok)throw new Error('HTTP '+res.status);
+    const data=await res.json();
+    const products=(data.products||[]).filter(p=>{const k=p.nutriments?.['energy-kcal_100g']??p.nutriments?.['energy-kcal'];return k!=null&&k>0&&p.product_name?.trim();});
+    if(products.length)return products;
+  }
+  return [];
 }
 function buildResultItem(p,onSelect){
   const kcal=Math.round(p.nutriments?.['energy-kcal_100g']??p.nutriments?.['energy-kcal']??0);
@@ -3230,6 +4225,8 @@ function selectPreset(id){
       fixedFPerUnit:p.fixedF??null,
     };
     document.getElementById('addMealBtn').disabled=false;
+    refreshAddMealButtonLabel();
+    updateSaveCurrentButtonLabel();
     renderPresets();
     return;
   }
@@ -3246,11 +4243,12 @@ function selectPreset(id){
   lastResult=null;document.getElementById('addMealBtn').disabled=true;
   updateRatio();
   if(p.servingG){showPortionRow(p.servingG);}else{hidePortionRow();queryValueEl.value='';clearResults();}
+  updateSaveCurrentButtonLabel();
   renderPresets();
 }
 function deleteCustom(id){
   saveCustom(loadCustom().filter(c=>c.id!==id));
-  if(activeId===id){activeId=null;['kcalPer100','rawRef','cookedRef','protRef','carbRef','fatRef'].forEach(i=>document.getElementById(i).value='');}
+  if(activeId===id){activeId=null;['kcalPer100','rawRef','cookedRef','protRef','carbRef','fatRef'].forEach(i=>document.getElementById(i).value='');resetSaveCurrentButton();}
   updateRatio();clearResults();renderPresets();
 }
 
@@ -3322,14 +4320,14 @@ async function handleBarcodeDetected(code){
       showScannerError('Produit ' + code + ' non trouvé dans Open Food Facts. Crée-le manuellement avec "+ Créer".');
       return;
     }
-    saveScannedProduct(data.product);
+    prepareScannedProductForSave(data.product);
     closeScannerModal();
   } catch(e){
     showScannerError('Erreur réseau : ' + e.message);
   }
 }
 
-function saveScannedProduct(p){
+function prepareScannedProductForSave(p){
   const n = p.nutriments || {};
   const name = p.product_name_fr || p.product_name || ('Produit ' + (p.code || ''));
   const brand = (p.brands || '').split(',')[0].trim();
@@ -3339,36 +4337,45 @@ function saveScannedProduct(p){
     return;
   }
   const fullName = brand ? `${name} — ${brand}` : name;
+  const servingG = parseServingGrams(p.serving_size || '') ||
+    (p.serving_quantity != null ? parseFloat(String(p.serving_quantity).replace(',','.')) : null);
   const existing = findPresetByName(fullName);
   if(existing){
     activeId = existing.id;
     selectPreset(existing.id);
+    openEditPreset(existing.id);
+    document.getElementById('modalInfo').textContent='Produit déjà enregistré. Tu peux modifier son nom ou ses valeurs.';
     if(presetSelectedDisplay){
       document.getElementById('presetSelectedName').textContent = (existing.emoji||'📦') + ' ' + existing.name;
       presetSelectedDisplay.style.display = 'flex';
     }
     return;
   }
-  const id = 'c_' + Date.now();
-  const newPreset = {
-    id, name: fullName, emoji: '📦',
-    kcal: Math.round(kcal*10)/10,
-    p: n.proteins_100g != null ? Math.round(n.proteins_100g*10)/10 : null,
-    c: n.carbohydrates_100g != null ? Math.round(n.carbohydrates_100g*10)/10 : null,
-    f: n.fat_100g != null ? Math.round(n.fat_100g*10)/10 : null,
-    rawRef: 100, cookedRef: 100,
-    group: 'Mes aliments', servingG: n.serving_quantity || null, fixed: false
-  };
-  const arr = loadCustom();
-  arr.push(newPreset);
-  saveCustom(arr);
-  activeId = id;
-  selectPreset(id);
-  if(presetSelectedDisplay){
-    document.getElementById('presetSelectedName').textContent = '📦 ' + fullName;
-    presetSelectedDisplay.style.display = 'flex';
-  }
-  renderPresets();
+  applyCalcResult({
+    name,
+    brand,
+    kcal:Math.round(kcal*10)/10,
+    p:n.proteins_100g != null ? Math.round(n.proteins_100g*10)/10 : null,
+    c:n.carbohydrates_100g != null ? Math.round(n.carbohydrates_100g*10)/10 : null,
+    f:n.fat_100g != null ? Math.round(n.fat_100g*10)/10 : null,
+    servingG:Number.isFinite(servingG) ? servingG : null
+  });
+  isCreatingNew=false;
+  editingPresetId=null;
+  document.getElementById('newFoodName').value=fullName;
+  document.getElementById('newFoodEmoji').value='📦';
+  document.getElementById('modalAddTitle').textContent='Modifier le produit scanné';
+  document.getElementById('confirmSave').textContent='Sauvegarder';
+  document.getElementById('modalInfo').textContent=`Produit scanné · ${Math.round(kcal*10)/10} kcal/100g${brand?' · '+brand:''}`;
+  if(typeof resetModalType==='function')resetModalType();
+  document.getElementById('modalEditMacros').style.display='block';
+  document.getElementById('editKcal').value=kcal;
+  document.getElementById('editP').value=n.proteins_100g??'';
+  document.getElementById('editC').value=n.carbohydrates_100g??'';
+  document.getElementById('editF').value=n.fat_100g??'';
+  document.getElementById('editServing').value=Number.isFinite(servingG)?servingG:'';
+  document.getElementById('modalAdd').classList.add('open');
+  setTimeout(()=>document.getElementById('newFoodName').select(),80);
 }
 
 document.getElementById('scanBarcodeBtn').addEventListener('click', openScannerModal);
@@ -3377,11 +4384,13 @@ document.getElementById('cancelScanBtn').addEventListener('click', closeScannerM
 document.getElementById('createPresetBtn').addEventListener('click',()=>{
   isCreatingNew=true;
   activeId=null;
+  editingPresetId=null;
   ['kcalPer100','rawRef','cookedRef','protRef','carbRef','fatRef','queryValue'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('filledKcalTag').innerHTML='';
   document.getElementById('filledMacroTag').innerHTML='';
   hidePortionRow();clearResults();lastResult=null;
   document.getElementById('addMealBtn').disabled=true;
+  resetSaveCurrentButton();
   updateRatio();
   if(presetSelectedDisplay) presetSelectedDisplay.style.display='none';
   if(presetSearchInput) presetSearchInput.value='';
@@ -3428,6 +4437,19 @@ function updateCalcTabLabels(){
   document.getElementById('queryLabel').textContent=cookMode==='raw'?'Poids souhaité':cfg.label;
   document.getElementById('queryUnit').textContent=cfg.unit;
   if(!currentServingG)queryValueEl.placeholder=cfg.ph;
+  const qtyGroup=document.getElementById('calcQtyModeGroup');
+  const portionsBtn=document.querySelector('.calc-qty-mode-btn[data-qmode="portions"]');
+  const gramsBtn=document.querySelector('.calc-qty-mode-btn[data-qmode="grams"]');
+  if(mode==='kcal'){
+    portionsBtn.style.display='none';
+    qtyGroup.style.gridTemplateColumns='1fr';
+    gramsBtn.textContent='⚖ Par calories';
+    if(calcQtyMode==='portions')gramsBtn.click();
+  }else{
+    portionsBtn.style.display='';
+    qtyGroup.style.gridTemplateColumns='1fr 1fr';
+    gramsBtn.textContent='⚖ Par grammes';
+  }
 }
 document.querySelectorAll('[data-mode]').forEach(btn=>{
   btn.addEventListener('click',()=>{
@@ -3458,12 +4480,12 @@ function calculate(){
   const pRef=parseFloat(document.getElementById('protRef').value),cRef=parseFloat(document.getElementById('carbRef').value),fRef=parseFloat(document.getElementById('fatRef').value);
   if(!k||!q||q<=0){clearResults();lastResult=null;document.getElementById('addMealBtn').disabled=true;return;}
   const kpg=k/100,hasMacro=!isNaN(pRef)&&!isNaN(cRef)&&!isNaN(fRef);
-  let rawG,cookedG,totalK;
+  let rawG,cookedG,totalK,ratio=null;
   if(cookMode==='raw'){rawG=q;cookedG=null;if(mode==='kcal'){totalK=q;rawG=q/kpg;}else totalK=rawG*kpg;}
   else{
     const rr=parseFloat(document.getElementById('rawRef').value),cr=parseFloat(document.getElementById('cookedRef').value);
     if(!rr||!cr){clearResults();lastResult=null;document.getElementById('addMealBtn').disabled=true;return;}
-    const ratio=cr/rr;
+    ratio=cr/rr;
     if(mode==='raw'){rawG=q;cookedG=rawG*ratio;totalK=rawG*kpg;}
     else if(mode==='cooked'){cookedG=q;rawG=cookedG/ratio;totalK=rawG*kpg;}
     else{totalK=q;rawG=q/kpg;cookedG=rawG*ratio;}
@@ -3481,8 +4503,9 @@ function calculate(){
   else{mpEl.textContent='—';mpEl.className='macro-val';mcEl.textContent='—';mcEl.className='macro-val';mfEl.textContent='—';mfEl.className='macro-val';}
   ['r1value','r2value','r3value','r4value'].forEach(popEl);
   const preset=allPresets().find(x=>x.id===activeId);
-  lastResult={name:preset?preset.name:(document.getElementById('newFoodName').value||'Aliment'),emoji:preset?preset.emoji:'',rawG,cookedG,kcal:totalK,p:totP,c:totC,f:totF,noCook:cookMode==='raw'};
+  lastResult={name:preset?preset.name:(document.getElementById('newFoodName').value||'Aliment'),emoji:preset?preset.emoji:'',rawG,cookedG,kcal:totalK,p:totP,c:totC,f:totF,noCook:cookMode==='raw',qtyMode:mode,kcalPer100:k,ratio,...currentCalcPortionMeta()};
   document.getElementById('addMealBtn').disabled=false;
+  refreshAddMealButtonLabel();
 }
 
 // ═══════════════════════════════════════════
@@ -3496,11 +4519,10 @@ document.getElementById('saveCurrentBtn').addEventListener('click',()=>{
     const id='c_'+Date.now();
     const p=parseFloat(document.getElementById('protRef').value),gc=parseFloat(document.getElementById('carbRef').value),f=parseFloat(document.getElementById('fatRef').value);
     const arr=loadCustom();
-    arr.push({id,name:pendingNewName,emoji:pendingNewEmoji||'⭐',kcal:k,p:!isNaN(p)?p:null,c:!isNaN(gc)?gc:null,f:!isNaN(f)?f:null,rawRef:r||100,cookedRef:c||100,group:'Mes aliments',servingG:currentServingG||null});
+    arr.push({id,name:pendingNewName,emoji:pendingNewEmoji||'⭐',kcal:k,p:!isNaN(p)?p:null,c:!isNaN(gc)?gc:null,f:!isNaN(f)?f:null,rawRef:r||100,cookedRef:c||100,group:'Mes aliments',servingG:servingGFromCalculatorForSave(null)});
     saveCustom(arr);activeId=id;
     isCreatingNew=false;
-    const btn=document.getElementById('saveCurrentBtn');
-    btn.textContent='+ Sauvegarder aliment';btn.style.background='';
+    resetSaveCurrentButton();
     document.getElementById('filledKcalTag').innerHTML='';document.getElementById('filledMacroTag').innerHTML='';
     if(presetSelectedDisplay){
       document.getElementById('presetSelectedLabel').textContent='Sélectionné :';
@@ -3509,6 +4531,48 @@ document.getElementById('saveCurrentBtn').addEventListener('click',()=>{
     }
     pendingNewName='';pendingNewEmoji='';
     renderPresets();
+    return;
+  }
+
+  const selectedCustom=selectedCustomPreset();
+  if(selectedCustom && !editingPresetId){
+    if(selectedCustom.fixed){
+      openEditPreset(selectedCustom.id);
+      return;
+    }
+    if(!k||(cookMode==='cooked'&&(!r||!c))){
+      document.getElementById('errorMsg').textContent="Remplis d'abord les champs de référence.";
+      return;
+    }
+    const arr=loadCustom();
+    const idx=arr.findIndex(x=>x.id===selectedCustom.id);
+    if(idx<0){resetSaveCurrentButton();return;}
+    const p=parseFloat(document.getElementById('protRef').value);
+    const gc=parseFloat(document.getElementById('carbRef').value);
+    const f=parseFloat(document.getElementById('fatRef').value);
+    arr[idx]={
+      ...arr[idx],
+      kcal:k,
+      p:!isNaN(p)?p:null,
+      c:!isNaN(gc)?gc:null,
+      f:!isNaN(f)?f:null,
+      rawRef:r||100,
+      cookedRef:c||100,
+      servingG:servingGFromCalculatorForSave(arr[idx].servingG||null),
+      fixed:false
+    };
+    saveCustom(arr);
+    const savedId=arr[idx].id;
+    document.getElementById('filledKcalTag').innerHTML='';
+    document.getElementById('filledMacroTag').innerHTML='';
+    activeId=savedId;
+    selectPreset(savedId);
+    renderPresets();
+    updateSaveCurrentButtonLabel();
+    const btn=document.getElementById('saveCurrentBtn');
+    const txt=btn.textContent;
+    btn.textContent='Aliment mis à jour';
+    setTimeout(()=>{btn.textContent=txt;updateSaveCurrentButtonLabel();},1000);
     return;
   }
 
@@ -3634,6 +4698,14 @@ document.getElementById('confirmSave').addEventListener('click',()=>{
   }
 
   // Normal save (from saveCurrentBtn flow)
+  const scannedMacros=document.getElementById('modalEditMacros').style.display==='block';
+  if(scannedMacros && modalFoodType==='per100'){
+    const fields=['editKcal','editP','editC','editF','editServing'];
+    for(const field of fields){
+      const input=document.getElementById(field);
+      if(!input.checkValidity() || (field==='editKcal' && input.value==='')){input.reportValidity();input.focus();return;}
+    }
+  }
   const id='c_'+Date.now();
   let newPreset;
   if(modalFoodType==='fixed'){
@@ -3651,13 +4723,18 @@ document.getElementById('confirmSave').addEventListener('click',()=>{
     const k=parseFloat(document.getElementById('kcalPer100').value),r=parseFloat(document.getElementById('rawRef').value),c=parseFloat(document.getElementById('cookedRef').value);
     const p=parseFloat(document.getElementById('protRef').value),gc=parseFloat(document.getElementById('carbRef').value),f=parseFloat(document.getElementById('fatRef').value);
     newPreset={id,name,emoji:emoji||'⭐',kcal:k,p:!isNaN(p)?p:null,c:!isNaN(gc)?gc:null,f:!isNaN(f)?f:null,
-      rawRef:r||100,cookedRef:c||100,group:'Mes aliments',servingG:currentServingG||null,fixed:false};
+      rawRef:r||100,cookedRef:c||100,group:'Mes aliments',servingG:servingGFromCalculatorForSave(null),fixed:false};
+  }
+  if(scannedMacros && modalFoodType==='per100'){
+    const read=id=>{const value=parseFloat(document.getElementById(id).value);return Number.isFinite(value)?value:null;};
+    Object.assign(newPreset,{kcal:read('editKcal'),p:read('editP'),c:read('editC'),f:read('editF'),servingG:read('editServing')>0?read('editServing'):null,rawRef:100,cookedRef:100});
   }
   const arr=loadCustom(); arr.push(newPreset);
   saveCustom(arr); activeId=id;
   document.getElementById('filledKcalTag').innerHTML='';document.getElementById('filledMacroTag').innerHTML='';
   document.getElementById('modalAdd').classList.remove('open');
   resetModalType();
+  if(scannedMacros){document.getElementById('modalEditMacros').style.display='none';selectPreset(id);}
   if(presetSelectedDisplay){
     document.getElementById('presetSelectedName').textContent=(emoji||'\u2b50')+' '+name;
     presetSelectedDisplay.style.display='flex';
@@ -3752,13 +4829,13 @@ const ingDropdown=document.getElementById('ingDropdown');
 let selectedIngPreset=null; // preset object
 
 function buildIngDropdown(filter=''){
-  const q=filter.toLowerCase().trim();
+  const q=normalizeSearchText(filter);
   ingDropdown.innerHTML='';
-  const matches=allPresets().filter(p=>
-    !q||p.name.toLowerCase().includes(q)||
-    (p.emoji||'').includes(q)||
-    (p.group||'').toLowerCase().includes(q)
-  );
+  const matches=allPresets().filter(p=>{
+    const n=normalizeSearchText(p.name);
+    const g=normalizeSearchText(p.group);
+    return !q||n.includes(q)||(p.emoji||'').includes(q)||g.includes(q);
+  });
   if(!matches.length){
     ingDropdown.innerHTML='<div style="padding:10px 14px;font-size:11px;color:var(--text-dim);">Aucun résultat</div>';
     return;
@@ -3786,7 +4863,10 @@ function buildIngDropdown(filter=''){
         selectIngPreset(p);
       };
       opt.addEventListener('mousedown', handleSelect);
-      opt.addEventListener('touchstart', handleSelect, {passive:false});
+      let touchStartY=0,touchMoved=false;
+      opt.addEventListener('touchstart',e=>{touchStartY=e.touches[0].clientY;touchMoved=false;},{passive:true});
+      opt.addEventListener('touchmove',e=>{if(Math.abs(e.touches[0].clientY-touchStartY)>8)touchMoved=true;},{passive:true});
+      opt.addEventListener('touchend',e=>{if(!touchMoved)handleSelect(e);},{passive:false});
       ingDropdown.appendChild(opt);
     });
   });
@@ -4002,17 +5082,26 @@ function openBuilder(recipeId){
   });
   document.getElementById('ing-panel-grams').style.display='flex';
   document.getElementById('ing-panel-portions').style.display='none';
+  document.querySelectorAll('#bCategorySelect .recipe-cat-btn').forEach(b=>{
+    b.classList.toggle('active',b.dataset.cat===builderCategory);
+  });
   document.getElementById('recipeBuilder').scrollIntoView({behavior:'smooth'});
   setTimeout(()=>document.getElementById('bName').focus(),80);
 }
+document.querySelectorAll('#bCategorySelect .recipe-cat-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    builderCategory=btn.dataset.cat;
+    document.querySelectorAll('#bCategorySelect .recipe-cat-btn').forEach(b=>b.classList.toggle('active',b===btn));
+  });
+});
 document.getElementById('newRecipeBtn').addEventListener('click',()=>{
   const builder=document.getElementById('recipeBuilder');
   if(builder.classList.contains('open')&&!editingRecipeId){builder.classList.remove('open');return;}
-  editingRecipeId=null;builderIngredients=[];
+  editingRecipeId=null;builderIngredients=[];builderCategory='meal';
   document.getElementById('bName').value='';document.getElementById('bEmoji').value='';
   openBuilder(null);
 });
-document.getElementById('bCancelBtn').addEventListener('click',()=>{document.getElementById('recipeBuilder').classList.remove('open');builderIngredients=[];editingRecipeId=null;});
+document.getElementById('bCancelBtn').addEventListener('click',()=>{document.getElementById('recipeBuilder').classList.remove('open');builderIngredients=[];editingRecipeId=null;builderCategory='meal';});
 document.getElementById('bSaveBtn').addEventListener('click',()=>{
   try{
     const name=document.getElementById('bName').value.trim();if(!name){document.getElementById('bName').focus();return;}
@@ -4020,7 +5109,8 @@ document.getElementById('bSaveBtn').addEventListener('click',()=>{
     const emoji=document.getElementById('bEmoji').value.trim()||'🍲',id=editingRecipeId||('r_'+Date.now());
     const existing=loadRecipes().find(r=>r.id===id);
     const recipes=loadRecipes().filter(r=>r.id!==id);
-    const newRecipe={id,name,emoji,
+        const newRecipe={id,name,emoji,
+      category:builderCategory,
       ingredients:JSON.parse(JSON.stringify(builderIngredients)),
       servings:existing?existing.servings:1,
       cookedWeight:existing?existing.cookedWeight:null,
@@ -4056,10 +5146,17 @@ function addRecipeToMeal(recipe,tK,tP,tC,tF,tR,hM,factor,label,mtype,servedG){
   setDayData(viewDateKey,d);
   activeMealType=mtype;
   document.querySelectorAll('.meal-type-tab').forEach(b=>b.classList.toggle('active',b.dataset.mtype===mtype));
-  document.querySelectorAll('.main-tab').forEach(b=>b.classList.toggle('active',b.dataset.panel==='calc'));
-  document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id==='panel-calc'));
-  renderMealSection();updateGoalBanner();
-  setTimeout(()=>document.getElementById('mealContent').scrollIntoView({behavior:'smooth'}),100);
+  renderMealTypeBadges();
+  updateNavBadges();
+  updateGoalBanner();
+}
+
+function markRecipeAdded(card){
+  if(!card)return;
+  card.classList.remove('recipe-just-added');
+  void card.offsetWidth;
+  card.classList.add('recipe-just-added');
+  setTimeout(()=>card.classList.remove('recipe-just-added'),950);
 }
 
 // ═══════════════════════════════════════════
@@ -4076,16 +5173,30 @@ function calcTotals(ings){
 }
 
 function renderRecipeList(){
-  const list=document.getElementById('recipeList'),empty=document.getElementById('recipesEmpty'),recipes=loadRecipes();
+  const list=document.getElementById('recipeList'),empty=document.getElementById('recipesEmpty'),allRecipes=loadRecipes();
   list.innerHTML='';
-  if(!recipes.length){empty.style.display='';return;}empty.style.display='none';
+  if(!allRecipes.length){
+    document.getElementById('recipesEmptyMsg').textContent='Aucune recette sauvegardée';
+    empty.style.display='';return;
+  }
+  const q=normalizeSearchText(recipeSearchQuery);
+  const recipes=allRecipes.filter(r=>{
+    if(recipeCategoryFilter!=='all'&&(r.category||'meal')!==recipeCategoryFilter)return false;
+    if(q&&!normalizeSearchText(r.name).includes(q))return false;
+    return true;
+  });
+  if(!recipes.length){
+    document.getElementById('recipesEmptyMsg').textContent='Aucune recette pour ce filtre';
+    empty.style.display='';return;
+  }
+  empty.style.display='none';
   recipes.forEach(recipe=>{
     const{tK,tP,tC,tF,tR,hM}=calcTotals(recipe.ingredients);
     const card=document.createElement('div');card.className='recipe-card fade-in';card.dataset.rid=recipe.id;
     card.innerHTML=`
       <div class="recipe-header">
         <div class="recipe-title-wrap"><span class="recipe-emoji">${recipe.emoji}</span>
-          <div><div class="recipe-name">${recipe.name}${typeof memberBadge==="function"?memberBadge(recipe.addedBy):""}</div><div class="recipe-meta">${recipe.ingredients.length} ing · ${fmt(tR,0)}g</div><div class="recipe-ing-preview">${recipe.ingredients.map(ing=>(ing.emoji||'')+' '+ing.name.replace(/ \(.*\)$/,'')).join(' · ')}</div></div>
+                    <div><div class="recipe-name">${recipe.name}${typeof memberBadge==="function"?memberBadge(recipe.addedBy):""}</div><div class="recipe-meta">${RECIPE_CAT_LABELS[recipe.category||'meal']} · ${recipe.ingredients.length} ing · ${fmt(tR,0)}g</div><div class="recipe-ing-preview">${recipe.ingredients.map(ing=>(ing.emoji||'')+' '+ing.name.replace(/ \(.*\)$/,'')).join(' · ')}</div></div>
         </div>
         <div class="recipe-badges"><span class="badge badge-kcal">${fmt(tK,0)} kcal</span>
           <div class="badge-actions">
@@ -4125,6 +5236,7 @@ function renderRecipeList(){
             <span style="font-size:10px;color:var(--text-dim);flex:1;">Poids cru : ${fmt(tR,0)}g · laisse vide si identique</span>
           </div>
           <div style="padding:10px 14px;">
+            <div class="recipe-date-warning ${viewDateKey===todayKey()?'':'visible'}">${escapeHtml(mealAddWarningText())}</div>
             <div style="display:flex;gap:6px;margin-bottom:10px;">
               <button class="add-mode-btn active" data-amode="parts" style="flex:1;background:var(--surface3);border:1px solid var(--border2);border-radius:2px;color:var(--text);font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.08em;text-transform:uppercase;padding:5px;cursor:pointer;">Par parts</button>
               <button class="add-mode-btn" data-amode="weight" style="flex:1;background:none;border:1px solid var(--border);border-radius:2px;color:var(--text-muted);font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.08em;text-transform:uppercase;padding:5px;cursor:pointer;">Par poids</button>
@@ -4224,7 +5336,8 @@ function renderRecipeList(){
       const mtype=card.querySelector('.recipe-meal-type').value;
       const factor=n/getServings();
       addRecipeToMeal(recipe,tK,tP,tC,tF,tR,hM,factor,n===1?'1 part':`${n} parts`,mtype,factor*getWeightRefSafe());
-      const btn=e.currentTarget;const orig=btn.textContent;btn.textContent='✓';btn.style.color='var(--green)';btn.style.borderColor='var(--green)';
+      markRecipeAdded(card);
+      const btn=e.currentTarget;const orig=btn.textContent;btn.textContent=`✓ ${MEAL_LABELS[mtype]||'Repas'}`;btn.style.color='var(--green)';btn.style.borderColor='var(--green)';
       setTimeout(()=>{btn.textContent=orig;btn.style.color='';btn.style.borderColor='';},1000);
     });
 
@@ -4235,19 +5348,21 @@ function renderRecipeList(){
       if(!w||!ref)return;
       const mtype=card.querySelector('.recipe-meal-type-w').value;
       addRecipeToMeal(recipe,tK,tP,tC,tF,tR,hM,w/ref,`${w}g`,mtype,w);
-      const btn=e.currentTarget;const orig=btn.textContent;btn.textContent='✓';btn.style.color='var(--green)';btn.style.borderColor='var(--green)';
+      markRecipeAdded(card);
+      const btn=e.currentTarget;const orig=btn.textContent;btn.textContent=`✓ ${MEAL_LABELS[mtype]||'Repas'}`;btn.style.color='var(--green)';btn.style.borderColor='var(--green)';
       setTimeout(()=>{btn.textContent=orig;btn.style.color='';btn.style.borderColor='';},1000);
     });
 
     card.querySelector('.edit-r').addEventListener('click',e=>{
       e.stopPropagation();editingRecipeId=recipe.id;
       builderIngredients=JSON.parse(JSON.stringify(recipe.ingredients));
+      builderCategory=recipe.category||'meal';
       document.getElementById('bName').value=recipe.name;document.getElementById('bEmoji').value=recipe.emoji;
       openBuilder(recipe.id);
     });
     card.querySelector('.dup-r').addEventListener('click',e=>{
       e.stopPropagation();const newId='r_'+Date.now();const recipes=loadRecipes();
-      recipes.push({id:newId,name:recipe.name+' (copie)',emoji:recipe.emoji,ingredients:JSON.parse(JSON.stringify(recipe.ingredients)),servings:recipe.servings||1,cookedWeight:recipe.cookedWeight||null,createdAt:new Date().toISOString()});
+      recipes.push({id:newId,name:recipe.name+' (copie)',emoji:recipe.emoji,category:recipe.category||'meal',ingredients:JSON.parse(JSON.stringify(recipe.ingredients)),servings:recipe.servings||1,cookedWeight:recipe.cookedWeight||null,createdAt:new Date().toISOString()});
       saveRecipes(recipes);renderRecipeList();
     });
     card.querySelector('.del').addEventListener('click',e=>{
@@ -4258,6 +5373,18 @@ function renderRecipeList(){
     list.appendChild(card);
   });
 }
+
+document.getElementById('recipeSearchInput').addEventListener('input',e=>{
+  recipeSearchQuery=e.target.value;
+  renderRecipeList();
+});
+document.querySelectorAll('#recipeCatFilter .recipe-cat-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    recipeCategoryFilter=btn.dataset.rcat;
+    document.querySelectorAll('#recipeCatFilter .recipe-cat-btn').forEach(b=>b.classList.toggle('active',b===btn));
+    renderRecipeList();
+  });
+});
 
 // ═══════════════════════════════════════════
 // INIT
@@ -4271,12 +5398,12 @@ const presetSelectedDisplay = document.getElementById('presetSelectedDisplay');
 const presetSelectedName    = document.getElementById('presetSelectedName');
 
 function buildPresetDropdown(filter=''){
-  const q = filter.toLowerCase().trim();
+  const q = normalizeSearchText(filter);
   presetDropdown.innerHTML = '';
   const customIds = new Set(loadCustom().map(c=>c.id));
   const groups = {};
   allPresets().forEach(p=>{
-    if(q && !p.name.toLowerCase().includes(q) && !(p.emoji||'').includes(q) && !(p.group||'').toLowerCase().includes(q)) return;
+    if(q && !normalizeSearchText(p.name).includes(q) && !(p.emoji||'').includes(q) && !normalizeSearchText(p.group).includes(q)) return;
     const g = p.group||'Divers'; if(!groups[g]) groups[g]=[];groups[g].push(p);
   });
   const total = Object.values(groups).reduce((s,a)=>s+a.length,0);
@@ -4345,7 +5472,10 @@ function buildPresetDropdown(filter=''){
         presetSelectedDisplay.style.display='flex';
       };
       left.addEventListener('mousedown', handleSelect);
-      left.addEventListener('touchstart', handleSelect, {passive:false});
+      let touchStartY=0,touchMoved=false;
+      left.addEventListener('touchstart',e=>{touchStartY=e.touches[0].clientY;touchMoved=false;},{passive:true});
+      left.addEventListener('touchmove',e=>{if(Math.abs(e.touches[0].clientY-touchStartY)>8)touchMoved=true;},{passive:true});
+      left.addEventListener('touchend',e=>{if(!touchMoved)handleSelect(e);},{passive:false});
       presetDropdown.appendChild(opt);
     });
   });
@@ -4353,15 +5483,15 @@ function buildPresetDropdown(filter=''){
 
 function buildPresetDropdown(filter=''){
   presetDropdown.innerHTML='';
-  const q=filter.trim().toLowerCase();
+  const q=normalizeSearchText(filter);
   const customIds=new Set(loadCustom().map(c=>c.id));
-  const sources=q?allPresets():[...DEFAULT_PRESETS,...loadCustom().map(p=>({...p,group:p.group||'Mes aliments'}))];
+  const sources=q?allPresets():[...loadCustom().map(p=>({...p,group:p.group||'Mes aliments'})),...DEFAULT_PRESETS];
   const MAX=80;
   const scored=[];
   for(const p of sources){
-    const n=(p.name||'').toLowerCase();
+    const n=normalizeSearchText(p.name);
     const e=(p.emoji||'').toLowerCase();
-    const g=(p.group||'').toLowerCase();
+    const g=normalizeSearchText(p.group);
     if(q){
       if(!n.includes(q)&&!e.includes(q)&&!g.includes(q))continue;
       let s=5;
@@ -4465,6 +5595,7 @@ presetSearchInput.addEventListener('keydown',e=>{
 });
 document.getElementById('presetClearBtn').addEventListener('click',()=>{
   activeId=null;
+  editingPresetId=null;
   presetSelectedDisplay.style.display='none';
   document.getElementById('presetSelectedLabel').textContent='Sélectionné :';
   presetSearchInput.value='';
@@ -4473,16 +5604,17 @@ document.getElementById('presetClearBtn').addEventListener('click',()=>{
   ['kcalPer100','rawRef','cookedRef','protRef','carbRef','fatRef'].forEach(id=>document.getElementById(id).value='');
   // Annule aussi la création en cours
   isCreatingNew=false;pendingNewName='';pendingNewEmoji='';
-  const sBtn=document.getElementById('saveCurrentBtn');
-  sBtn.textContent='+ Sauvegarder aliment';sBtn.style.background='';
+  resetSaveCurrentButton();
   updateRatio();
 });
 // override clearPresetBtn to also reset combobox display
 document.getElementById('clearPresetBtn').addEventListener('click',()=>{
   activeId=null;
+  editingPresetId=null;
   presetSelectedDisplay.style.display='none';
   presetSearchInput.value='';
   hidePortionRow();queryValueEl.value='';clearResults();lastResult=null;document.getElementById('addMealBtn').disabled=true;
+  resetSaveCurrentButton();
 });
 
 // ═══════════════════════════════════════════
@@ -4491,6 +5623,62 @@ document.getElementById('clearPresetBtn').addEventListener('click',()=>{
 const LS_SAVED_MEALS = 'calorieSavedMeals_v1';
 const loadSavedMeals = ()=>{try{return JSON.parse(localStorage.getItem(LS_SAVED_MEALS)||'[]');}catch{return[];}};
 const saveSavedMeals = a=>{localStorage.setItem(LS_SAVED_MEALS,JSON.stringify(a));syncPushKey('savedMeals');};
+
+function defaultItemsForActiveMeal(){
+  return loadDefaultMeals()[activeMealType] || [];
+}
+function refreshDefaultMealButtons(){
+  const addBtn=document.getElementById('addDefaultsBtn');
+  const setBtn=document.getElementById('setDefaultsBtn');
+  if(!addBtn||!setBtn)return;
+  const defaults=defaultItemsForActiveMeal();
+  addBtn.disabled=defaults.length===0;
+  addBtn.textContent=defaults.length?`+ Défauts (${defaults.length})`:'+ Défauts';
+  setBtn.textContent='Définir défaut';
+}
+function addDefaultMealItems(){
+  const defaults=defaultItemsForActiveMeal();
+  if(!defaults.length){alert('Aucun aliment par défaut pour ce repas.');return;}
+  const date=viewDateKey,type=activeMealType;
+  const dialog=document.createElement('dialog');
+  dialog.style.cssText='width:min(420px,calc(100% - 32px));max-height:80vh;overflow:auto;box-sizing:border-box;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);padding:16px;';
+  const title=document.createElement('h3');title.textContent='Aliments par défaut · '+MEAL_LABELS[type];dialog.appendChild(title);
+  const add=items=>{const data=getDayData(date);items.forEach(item=>data[type].push(copyMealItem(item)));setDayData(date,data);renderMealSection();updateGoalBanner();updateNavBadges();};
+  defaults.forEach(item=>{
+    const row=document.createElement('div');row.style.cssText='display:flex;gap:8px;margin:8px 0;';
+    const button=document.createElement('button');button.className='btn-ghost';button.style.cssText='flex:1;min-width:0;min-height:44px;white-space:normal;';
+    button.textContent='+ '+item.name+' · '+mealItemDisplay(item).display;
+    button.onclick=()=>{add([item]);button.textContent='✓ Ajouté : '+item.name;};
+    const remove=document.createElement('button');remove.className='btn-ghost';remove.textContent='×';remove.title='Retirer des défauts';remove.setAttribute('aria-label','Retirer '+item.name+' des défauts');remove.style.minWidth='44px';
+    remove.onclick=()=>{const saved=loadDefaultMeals();saved[type]=saved[type].filter(entry=>entry.name!==item.name);saveDefaultMeals(saved);refreshDefaultMealButtons();dialog.close();if(saved[type].length)addDefaultMealItems();};
+    row.append(button,remove);dialog.appendChild(row);
+  });
+  const all=document.createElement('button');all.className='btn-primary';all.textContent='Tout ajouter';all.onclick=()=>{add(defaults);dialog.close();};
+  const close=document.createElement('button');close.className='btn-ghost';close.textContent='Fermer';close.onclick=()=>dialog.close();
+  dialog.append(all,close);dialog.addEventListener('close',()=>dialog.remove());document.body.appendChild(dialog);dialog.showModal();
+}
+function setDefaultMealItems(){
+  const d=getDayData(viewDateKey);
+  const items=d[activeMealType]||[];
+  const defaults=loadDefaultMeals();
+  if(!items.length){
+    if(!(defaults[activeMealType]||[]).length){alert('Le repas est vide.');return;}
+    if(!confirm(`Supprimer les aliments par défaut pour ${MEAL_LABELS[activeMealType]} ?`))return;
+    defaults[activeMealType]=[];
+    saveDefaultMeals(defaults);
+    refreshDefaultMealButtons();
+    return;
+  }
+  defaults[activeMealType]=items.map(cloneMealForShare);
+  saveDefaultMeals(defaults);
+  refreshDefaultMealButtons();
+  const btn=document.getElementById('setDefaultsBtn');
+  const original=btn.textContent;
+  btn.textContent='Défaut enregistré';
+  setTimeout(()=>{btn.textContent=original;refreshDefaultMealButtons();},1000);
+}
+document.getElementById('addDefaultsBtn').addEventListener('click',addDefaultMealItems);
+document.getElementById('setDefaultsBtn').addEventListener('click',setDefaultMealItems);
 
 // Save current meal type
 document.getElementById('saveMealBtn').addEventListener('click',()=>{
@@ -4543,7 +5731,7 @@ function openSavedMeals(){
       btn.addEventListener('click',()=>{
         const sm=arr[parseInt(btn.dataset.idx)];
         const d=getDayData(viewDateKey);
-        sm.items.forEach(item=>d[activeMealType].push({...item,id:Date.now()+Math.random()}));
+        sm.items.forEach(item=>d[activeMealType].push(copyMealItem(item)));
         setDayData(viewDateKey,d);renderMealSection();updateGoalBanner();
         document.getElementById('modalLoadMeal').classList.remove('open');
       });
@@ -4552,7 +5740,7 @@ function openSavedMeals(){
       btn.addEventListener('click',()=>{
         const sm=arr[parseInt(btn.dataset.idx)];
         const d=getDayData(viewDateKey);
-        d[activeMealType]=sm.items.map(item=>({...item,id:Date.now()+Math.random()}));
+        d[activeMealType]=sm.items.map(copyMealItem);
         setDayData(viewDateKey,d);renderMealSection();updateGoalBanner();
         document.getElementById('modalLoadMeal').classList.remove('open');
       });
@@ -4589,13 +5777,17 @@ document.getElementById('confirmDupMeal').addEventListener('click',()=>{
   if(!targetDate)return;
   const src=getDayData(viewDateKey)[dupMealSourceType];
   const d=getDayData(targetDate);
-  src.forEach(item=>d[targetType].push({...item,id:Date.now()+Math.random()}));
+  src.forEach(item=>d[targetType].push(copyMealItem(item)));
   setDayData(targetDate,d);
   document.getElementById('modalDupMeal').classList.remove('open');
   if(targetDate===viewDateKey){activeMealType=targetType;document.querySelectorAll('.meal-type-tab').forEach(b=>b.classList.toggle('active',b.dataset.mtype===targetType));renderMealSection();updateGoalBanner();}
 });
 document.getElementById('cancelDupMeal').addEventListener('click',()=>document.getElementById('modalDupMeal').classList.remove('open'));
 document.getElementById('modalDupMeal').addEventListener('click',e=>{if(e.target===document.getElementById('modalDupMeal'))document.getElementById('modalDupMeal').classList.remove('open');});
+
+document.getElementById('confirmShareMeal').addEventListener('click',sendShareRequest);
+document.getElementById('cancelShareMeal').addEventListener('click',()=>{document.getElementById('modalShareMeal').classList.remove('open');currentShareDraft=null;});
+document.getElementById('modalShareMeal').addEventListener('click',e=>{if(e.target===document.getElementById('modalShareMeal')){document.getElementById('modalShareMeal').classList.remove('open');currentShareDraft=null;}});
 
 // Dup day
 document.getElementById('dupDayBtn').addEventListener('click',()=>{
@@ -4610,7 +5802,7 @@ document.getElementById('confirmDupDay').addEventListener('click',()=>{
   if(!targetDate||targetDate===viewDateKey){alert('Choisis un jour différent.');return;}
   const srcData=getDayData(viewDateKey);
   const copy={};
-  MEAL_TYPES.forEach(t=>{copy[t]=srcData[t].map(item=>({...item,id:Date.now()+Math.random()}));});
+  MEAL_TYPES.forEach(t=>{copy[t]=srcData[t].map(copyMealItem);});
   setDayData(targetDate,copy);
   document.getElementById('modalDupDay').classList.remove('open');
   // navigate to target day
@@ -4674,17 +5866,7 @@ function loadProfil(){try{return JSON.parse(localStorage.getItem(LS_PROFIL)||'{}
 function saveProfil(p){localStorage.setItem(LS_PROFIL,JSON.stringify(p));syncPushKey('profil');}
 
 // Restore saved profil on load
-(function(){
-  const p=loadProfil();
-  if(p.sexe) document.getElementById('profilSexe').value=p.sexe;
-  if(p.age)  document.getElementById('profilAge').value=p.age;
-  if(p.poids) document.getElementById('profilPoids').value=p.poids;
-  if(p.taille) document.getElementById('profilTaille').value=p.taille;
-  if(p.activite) document.getElementById('profilActivite').value=p.activite;
-  if(p.objectif){
-    document.querySelectorAll('.profil-obj-btn').forEach(b=>b.classList.toggle('active',b.dataset.obj===p.objectif));
-  }
-})();
+refreshPersonalUIFromStorage();
 
 // Objectif toggle
 document.querySelectorAll('.profil-obj-btn').forEach(btn=>{
@@ -4714,7 +5896,7 @@ document.querySelectorAll('.profil-obj-btn').forEach(btn=>{
   });
 });
 
-function calcProfil(){
+function profileEnergyTargets(){
   const sexe=document.getElementById('profilSexe').value;
   const age=parseFloat(document.getElementById('profilAge').value);
   const poids=parseFloat(document.getElementById('profilPoids').value);
@@ -4722,53 +5904,161 @@ function calcProfil(){
   const activite=parseFloat(document.getElementById('profilActivite').value)||1.55;
   const objBtn=document.querySelector('.profil-obj-btn.active');
   const objectif=objBtn?objBtn.dataset.obj:'maintain';
+  if(!age||!poids||!taille)return null;
+  const bmr=Math.round(sexe==='h'
+    ? 10*poids + 6.25*taille - 5*age + 5
+    : 10*poids + 6.25*taille - 5*age - 161);
+  const maintenance=Math.round(bmr*activite);
+  let kcalTarget=maintenance;
+  if(objectif==='loss')kcalTarget=Math.round(maintenance*0.8);
+  else if(objectif==='gain')kcalTarget=Math.round(maintenance*1.1);
+  return {bmr,maintenance,kcalTarget,macroRanges:macroGoalRangesFromKcal(kcalTarget)};
+}
+
+function periodWindow(period){
+  const today=new Date(todayKey()+'T12:00:00');
+  let start=new Date(today);
+  let label='Semaine';
+  if(period==='week'){
+    const day=start.getDay()||7;
+    start.setDate(start.getDate()-day+1);
+  }else if(period==='month'){
+    label='Mois';
+    start=new Date(today.getFullYear(),today.getMonth(),1,12);
+  }else{
+    label='Année';
+    start=new Date(today.getFullYear(),0,1,12);
+  }
+  return {label,start,end:today};
+}
+
+function storedDayHasEntries(day){
+  return !!day && MEAL_TYPES.some(t=>Array.isArray(day[t]) && day[t].length>0);
+}
+
+function storedDayTotals(day){
+  return MEAL_TYPES.reduce((totals,t)=>{
+    (day[t]||[]).forEach(i=>{
+      totals.kcal+=Number(i.kcal)||0;
+      totals.p+=Number(i.p)||0;
+      totals.c+=Number(i.c)||0;
+      totals.f+=Number(i.f)||0;
+    });
+    return totals;
+  },{kcal:0,p:0,c:0,f:0});
+}
+
+function daysBetweenInclusive(start,end){
+  return Math.max(0,Math.floor((end-start)/86400000)+1);
+}
+
+function balanceClass(value){
+  if(Math.abs(value)<1)return 'neutral';
+  return value<=0?'ok':'over';
+}
+
+function formatSigned(value,unit,decimals=0){
+  if(Math.abs(value)<1)return `0 ${unit}`;
+  const rounded=fmt(Math.abs(value),decimals);
+  return `${value>0?'+':'-'}${rounded} ${unit}`;
+}
+
+function renderProfileBalance(targets){
+  const root=document.getElementById('profileBalanceContent');
+  if(!root)return;
+  if(!targets){
+    root.innerHTML='<div class="profile-balance-empty">Remplis ton profil pour calculer le maintien.</div>';
+    return;
+  }
+  const {label,start,end}=periodWindow(profileBalancePeriod);
+  const elapsed=daysBetweenInclusive(start,end);
+  const history=loadHistory();
+  const totals={kcal:0,p:0,c:0,f:0};
+  let followed=0;
+  for(const d=new Date(start);d<=end;d.setDate(d.getDate()+1)){
+    const key=formatDateKey(d);
+    const day=history[key];
+    if(!storedDayHasEntries(day))continue;
+    const dt=storedDayTotals(day);
+    totals.kcal+=dt.kcal;totals.p+=dt.p;totals.c+=dt.c;totals.f+=dt.f;
+    followed++;
+  }
+  if(!followed){
+    root.innerHTML=`<div class="profile-balance-empty">Aucun jour renseigné sur la période ${label.toLowerCase()}.</div>`;
+    return;
+  }
+  const avg={
+    kcal:totals.kcal/followed,
+    p:totals.p/followed,
+    c:totals.c/followed,
+    f:totals.f/followed
+  };
+  const dailyDelta=avg.kcal-targets.maintenance;
+  const totalDelta=dailyDelta*followed;
+  const ranges=targets.macroRanges;
+  root.innerHTML=`
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">${label} · ${followed} j suivis sur ${elapsed} écoulés</div>
+    <div class="profile-balance-summary">
+      <div class="profile-balance-stat">
+        <div class="profile-balance-label">Moyenne</div>
+        <div class="profile-balance-value">${fmt(avg.kcal,0)} kcal/j</div>
+      </div>
+      <div class="profile-balance-stat">
+        <div class="profile-balance-label">Maintien</div>
+        <div class="profile-balance-value neutral">${targets.maintenance} kcal/j</div>
+      </div>
+      <div class="profile-balance-stat">
+        <div class="profile-balance-label">Écart maintien / jour</div>
+        <div class="profile-balance-value ${balanceClass(dailyDelta)}">${formatSigned(dailyDelta,'kcal')}</div>
+      </div>
+      <div class="profile-balance-stat">
+        <div class="profile-balance-label">Écart total</div>
+        <div class="profile-balance-value ${balanceClass(totalDelta)}">${formatSigned(totalDelta,'kcal')}</div>
+      </div>
+    </div>
+    <div class="profile-balance-macros">
+      <div class="profile-balance-macro" style="background:var(--blue-light);color:var(--blue);"><span>Protéines</span>${fmt(avg.p)}g/j<div class="profile-macro-note">${ranges.p.min}-${ranges.p.max}g visés</div></div>
+      <div class="profile-balance-macro" style="background:var(--orange-light);color:var(--orange);"><span>Glucides</span>${fmt(avg.c)}g/j<div class="profile-macro-note">${ranges.c.min}-${ranges.c.max}g visés</div></div>
+      <div class="profile-balance-macro" style="background:var(--green-light);color:var(--green);"><span>Lipides</span>${fmt(avg.f)}g/j<div class="profile-macro-note">${ranges.f.min}-${ranges.f.max}g visés</div></div>
+    </div>`;
+}
+
+document.querySelectorAll('.profile-balance-tab').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    profileBalancePeriod=btn.dataset.balancePeriod;
+    document.querySelectorAll('.profile-balance-tab').forEach(b=>b.classList.toggle('active',b===btn));
+    renderProfileBalance(profileEnergyTargets());
+  });
+});
+
+function calcProfil(){
+  const targets=profileEnergyTargets();
 
   const empty=document.getElementById('profilEmpty');
   const results=document.getElementById('profilResults');
 
-  if(!age||!poids||!taille){
+  if(!targets){
     if(empty) empty.style.display='';
     if(results) results.style.display='none';
+    renderProfileBalance(null);
     return;
   }
   if(empty) empty.style.display='none';
   if(results) results.style.display='';
 
-  // Mifflin-St Jeor BMR
-  let bmr;
-  if(sexe==='h') bmr = 10*poids + 6.25*taille - 5*age + 5;
-  else            bmr = 10*poids + 6.25*taille - 5*age - 161;
-  bmr = Math.round(bmr);
-
-  // TDEE
-  let tdee = Math.round(bmr * activite);
-
-  // Adjust for objective
-  let kcalTarget;
-  if(objectif==='loss')    kcalTarget = Math.round(tdee * 0.8);   // -20%
-  else if(objectif==='gain') kcalTarget = Math.round(tdee * 1.1); // +10%
-  else kcalTarget = tdee;
-
-  // Macros: P 30% / G 40% / L 30%
-  const pKcal = Math.round(kcalTarget * 0.30);
-  const gKcal = Math.round(kcalTarget * 0.40);
-  const lKcal = Math.round(kcalTarget * 0.30);
-  const pG = Math.round(pKcal / 4);
-  const gG = Math.round(gKcal / 4);
-  const lG = Math.round(lKcal / 9);
-
   // Update UI
-  document.getElementById('profilBMR').textContent  = bmr;
-  document.getElementById('profilTDEE').textContent = kcalTarget;
-  document.getElementById('profilProt').textContent = pG;
-  document.getElementById('profilGluc').textContent = gG;
-  document.getElementById('profilLip').textContent  = lG;
-  document.getElementById('profilProtKcal').textContent = pKcal+' kcal';
-  document.getElementById('profilGlucKcal').textContent = gKcal+' kcal';
-  document.getElementById('profilLipKcal').textContent  = lKcal+' kcal';
+  document.getElementById('profilBMR').textContent  = targets.bmr;
+  document.getElementById('profilTDEE').textContent = targets.kcalTarget;
+  document.getElementById('profilProt').textContent = `${targets.macroRanges.p.min}-${targets.macroRanges.p.max}`;
+  document.getElementById('profilGluc').textContent = `${targets.macroRanges.c.min}-${targets.macroRanges.c.max}`;
+  document.getElementById('profilLip').textContent  = `${targets.macroRanges.f.min}-${targets.macroRanges.f.max}`;
+  document.getElementById('profilProtKcal').textContent = `g/jour · ${targets.macroRanges.p.pct}`;
+  document.getElementById('profilGlucKcal').textContent = `g/jour · ${targets.macroRanges.c.pct}`;
+  document.getElementById('profilLipKcal').textContent  = `g/jour · ${targets.macroRanges.f.pct}`;
 
   // Store for apply button
-  document.getElementById('profilApplyBtn')._tdee = kcalTarget;
+  document.getElementById('profilApplyBtn')._tdee = targets.kcalTarget;
+  renderProfileBalance(targets);
 }
 
 document.getElementById('profilApplyBtn').addEventListener('click',()=>{
@@ -5043,6 +6333,172 @@ document.getElementById('balanceRecipeBtn').addEventListener('click',()=>{
 
 
 
+// ═══════════════════════════════════════════
+// IDEA BOX
+// ═══════════════════════════════════════════
+const IDEA_STATUSES={
+  new:'À étudier',
+  planned:'Prévu',
+  done:'Fait',
+  rejected:'Refusé'
+};
+
+function loadIdeasLocal(){
+  try{return JSON.parse(localStorage.getItem(LS_IDEAS)||'[]');}
+  catch{return[];}
+}
+
+async function loadIdeas(){
+  if(!currentFamilyId||!window.firebase)return loadIdeasLocal();
+  const { getDoc } = window.firebase;
+  const snap=await getDoc(sharedDocRef('ideas'));
+  const items=snap.exists() ? (snap.data().items||[]) : [];
+  localStorage.setItem(LS_IDEAS,JSON.stringify(items));
+  return items;
+}
+
+async function saveIdeas(items){
+  localStorage.setItem(LS_IDEAS,JSON.stringify(items));
+  if(!currentFamilyId||!window.firebase)return;
+  const { setDoc } = window.firebase;
+  await setDoc(sharedDocRef('ideas'),{items},{merge:true});
+}
+
+function ideaAuthorLabel(idea){
+  return idea.authorName || memberName(idea.authorUid);
+}
+
+function ideaDateLabel(iso){
+  if(!iso)return '';
+  try{return fmtDateKey(iso.slice(0,10));}
+  catch{return '';}
+}
+
+function canEditIdea(idea){
+  return !!currentUser && (idea.authorUid===currentUser.uid || isFamilyOwner);
+}
+
+async function renderIdeas(){
+  const list=document.getElementById('ideasList');
+  const countEl=document.getElementById('ideaCount');
+  const status=document.getElementById('ideasStatus');
+  if(!list)return;
+  try{
+    const ideas=(await loadIdeas()).sort((a,b)=>{
+      const order={new:0,planned:1,done:2,rejected:3};
+      const statusDiff=(order[a.status||'new']??0)-(order[b.status||'new']??0);
+      return statusDiff || (b.createdAt||'').localeCompare(a.createdAt||'');
+    });
+    if(countEl)countEl.textContent=ideas.length?`(${ideas.length})`:'';
+    if(status)status.textContent='';
+    list.innerHTML='';
+    if(!ideas.length){
+      list.innerHTML='<div style="font-size:12px;color:var(--text-dim);text-align:center;padding:14px;">Aucune idée pour le moment.</div>';
+      return;
+    }
+    ideas.forEach(idea=>{
+      const votes=Array.isArray(idea.votes)?idea.votes:[];
+      const voted=!!currentUser&&votes.includes(currentUser.uid);
+      const statusOptions=Object.entries(IDEA_STATUSES).map(([value,label])=>
+        `<option value="${value}" ${value===(idea.status||'new')?'selected':''}>${label}</option>`
+      ).join('');
+      const row=document.createElement('div');
+      row.className='idea-card';
+      row.innerHTML=`
+        <div class="idea-head">
+          <div style="min-width:0;">
+            <div class="idea-text">${escapeHtml(idea.text)}</div>
+            <div class="idea-meta">${escapeHtml(ideaAuthorLabel(idea))}${idea.createdAt?' · '+escapeHtml(ideaDateLabel(idea.createdAt)):''}</div>
+          </div>
+          <div style="font-size:11px;font-weight:700;color:var(--accent);white-space:nowrap;">${escapeHtml(IDEA_STATUSES[idea.status||'new']||IDEA_STATUSES.new)}</div>
+        </div>
+        <div class="idea-actions">
+          <button class="idea-vote-btn ${voted?'voted':''}" data-action="vote" data-id="${idea.id}">+1 · ${votes.length}</button>
+          ${isFamilyOwner?`<select class="idea-status-select" data-action="status" data-id="${idea.id}">${statusOptions}</select>`:''}
+          ${canEditIdea(idea)?`<button class="idea-delete-btn" data-action="delete" data-id="${idea.id}">Supprimer</button>`:''}
+        </div>`;
+      list.appendChild(row);
+    });
+  }catch(e){
+    console.error('[ideas] render',e);
+    if(status){status.style.color='var(--red)';status.textContent='Impossible de charger les idées.';}
+  }
+}
+
+async function addIdea(){
+  const input=document.getElementById('ideaInput');
+  const status=document.getElementById('ideasStatus');
+  const text=input.value.trim();
+  if(!text){input.focus();return;}
+  if(!currentUser)return;
+  try{
+    if(status){status.style.color='var(--text-muted)';status.innerHTML='<span class="spinner"></span>Ajout...';}
+    const ideas=await loadIdeas();
+    ideas.push({
+      id:'idea_'+Date.now(),
+      text,
+      status:'new',
+      votes:[],
+      authorUid:currentUser.uid,
+      authorName:currentUser.displayName || currentUser.email?.split('@')[0] || 'Membre',
+      createdAt:new Date().toISOString(),
+      updatedAt:new Date().toISOString()
+    });
+    await saveIdeas(ideas);
+    input.value='';
+    if(status){status.style.color='var(--green)';status.textContent='Idée ajoutée.';}
+    renderIdeas();
+  }catch(e){
+    console.error('[ideas] add',e);
+    if(status){status.style.color='var(--red)';status.textContent='Impossible d’ajouter l’idée.';}
+  }
+}
+
+async function updateIdea(id,updater){
+  const ideas=await loadIdeas();
+  const idx=ideas.findIndex(i=>i.id===id);
+  if(idx<0)return;
+  ideas[idx]={...ideas[idx],...updater(ideas[idx]),updatedAt:new Date().toISOString()};
+  await saveIdeas(ideas);
+  renderIdeas();
+}
+
+async function deleteIdea(id){
+  const ideas=await loadIdeas();
+  const idea=ideas.find(i=>i.id===id);
+  if(!idea||!canEditIdea(idea))return;
+  if(!confirm('Supprimer cette idée ?'))return;
+  await saveIdeas(ideas.filter(i=>i.id!==id));
+  renderIdeas();
+}
+
+function setupIdeasHandlers(){
+  const addBtn=document.getElementById('addIdeaBtn');
+  const input=document.getElementById('ideaInput');
+  const list=document.getElementById('ideasList');
+  if(addBtn)addBtn.addEventListener('click',addIdea);
+  if(input)input.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey))addIdea();});
+  if(list)list.addEventListener('click',async e=>{
+    const control=e.target.closest('[data-action]');
+    if(!control)return;
+    const id=control.dataset.id;
+    if(control.dataset.action==='vote'){
+      await updateIdea(id,idea=>{
+        const votes=Array.isArray(idea.votes)?idea.votes:[];
+        const has=currentUser&&votes.includes(currentUser.uid);
+        return {votes:has?votes.filter(uid=>uid!==currentUser.uid):[...votes,currentUser.uid]};
+      });
+    }else if(control.dataset.action==='delete'){
+      await deleteIdea(id);
+    }
+  });
+  if(list)list.addEventListener('change',async e=>{
+    const select=e.target.closest('[data-action="status"]');
+    if(!select||!isFamilyOwner)return;
+    await updateIdea(select.dataset.id,()=>({status:select.value}));
+  });
+}
+
 // ── Cache des membres (pour badges "ajouté par")
 // _membersCache declared at top of script
 async function loadMembersCache(){
@@ -5074,9 +6530,12 @@ async function refreshFamilyUI(){
   const db = window.firebase.db;
   try{
     // Family meta
+    let ownerId = null;
     const famSnap = await getDoc(doc(db,'families',currentFamilyId));
     if(famSnap.exists()){
       const fam = famSnap.data();
+      ownerId = fam.ownerId || null;
+      isFamilyOwner = ownerId === currentUser.uid;
       document.getElementById('familyInviteCode').textContent = fam.inviteCode || '------';
       document.getElementById('familyNameInput').value = fam.name || '';
     }
@@ -5085,26 +6544,75 @@ async function refreshFamilyUI(){
     const list = document.getElementById('familyMembersList');
     list.innerHTML = '';
     let count = 0;
+    familyMembers = [];
     membersSnap.forEach(m=>{
       count++;
       const data = m.data();
       const isMe = m.id === currentUser.uid;
+      const isActive = m.id === activeUserId();
+      const isOwner = m.id === ownerId;
+      familyMembers.push({id:m.id, ...data});
       const initial = (data.name||'?')[0].toUpperCase();
       const row = document.createElement('div');
       row.style.cssText='display:flex;align-items:center;gap:10px;padding:8px;background:var(--surface2);border-radius:var(--radius-sm);';
       row.innerHTML=`
         <div class="user-avatar" style="width:34px;height:34px;">${initial}</div>
         <div style="flex:1;min-width:0;">
-          <div style="font-size:13px;font-weight:600;color:var(--text);">${data.name||'Membre'}${isMe?' <span style=\"font-size:10px;color:var(--accent);font-weight:500;\">(toi)</span>':''}</div>
+          <div style="font-size:13px;font-weight:600;color:var(--text);">${data.name||'Membre'}${isMe?' <span style=\"font-size:10px;color:var(--accent);font-weight:500;\">(toi)</span>':''}${isOwner?' <span style=\"font-size:10px;color:var(--blue);font-weight:500;\">admin</span>':''}${isActive?' <span style=\"font-size:10px;color:var(--green);font-weight:500;\">actif</span>':''}</div>
           <div style="font-size:11px;color:var(--text-dim);">${data.email||(data.isAnonymous?'Compte anonyme':'')}</div>
         </div>`;
       list.appendChild(row);
     });
     document.getElementById('familyMemberCount').textContent = '('+count+')';
+    renderFamilyAdminControls();
+    renderIdeas();
   }catch(e){console.error('[family] refreshUI',e);}
 }
 
+function renderFamilyAdminControls(){
+  const card=document.getElementById('familyAdminCard');
+  const select=document.getElementById('familyAdminMemberSelect');
+  const status=document.getElementById('familyAdminStatus');
+  if(!card||!select||!status) return;
+  const canAdmin = isFamilyOwner && familyMembers.length > 0;
+  card.style.display = canAdmin ? '' : 'none';
+  if(!canAdmin) return;
+  select.innerHTML='';
+  familyMembers.forEach(m=>{
+    const opt=document.createElement('option');
+    opt.value=m.id;
+    opt.textContent=(m.name||m.email||'Membre')+(m.id===currentUser.uid?' (toi)':'');
+    select.appendChild(opt);
+  });
+  select.value=activeUserId()||currentUser.uid;
+  const active=familyMembers.find(m=>m.id===activeUserId());
+  status.textContent='Compte actif : '+(active?.name||active?.email||'Membre');
+}
+
 function setupFamilyHandlers(){
+  setupIdeasHandlers();
+
+  document.getElementById('familyAdminSwitchBtn').addEventListener('click', async()=>{
+    if(!isFamilyOwner){return;}
+    const select=document.getElementById('familyAdminMemberSelect');
+    const status=document.getElementById('familyAdminStatus');
+    const userId=select.value;
+    if(!userId || userId===activeUserId()) return;
+    status.style.color='var(--text-muted)';
+    status.innerHTML='<span class="spinner"></span>Chargement…';
+    try{
+      await switchPersonalContext(userId);
+      await refreshFamilyUI();
+      const active=familyMembers.find(m=>m.id===activeUserId());
+      status.style.color='var(--green)';
+      status.textContent='Compte actif : '+(active?.name||active?.email||'Membre');
+    }catch(e){
+      console.error('[family] admin switch',e);
+      status.style.color='var(--red)';
+      status.textContent='Accès refusé ou données indisponibles.';
+    }
+  });
+
   // Copy invite code
   document.getElementById('copyInviteCodeBtn').addEventListener('click',()=>{
     const code = document.getElementById('familyInviteCode').textContent;
@@ -5180,6 +6688,8 @@ async function joinFamilyByCode(){
 
     // Push my current personal data to the new family (shared data stays in old family)
     currentFamilyId = targetId;
+    activePersonalUserId = currentUser.uid;
+    isFamilyOwner = false;
     _syncEnabled = true;
     // Re-pull from new family
     await syncPullAll();
@@ -5189,7 +6699,7 @@ async function joinFamilyByCode(){
 
     // Refresh everything
     if(typeof renderPresets==='function') renderPresets();
-    if(typeof renderMealSection==='function') renderMealSection();
+    refreshPersonalUIFromStorage();
     if(typeof renderRecipeList==='function') renderRecipeList();
     refreshFamilyUI();
   }catch(e){
@@ -5210,12 +6720,210 @@ setTimeout(()=>{
     .catch(()=>{});
 }, 3000);
 
-// ── PWA Service Worker
-if('serviceWorker' in navigator){
-  window.addEventListener('load',()=>{
-    navigator.serviceWorker.register('sw.js')
-      .catch(err=>console.log('SW non disponible:',err));
+// ── Notes de mise à jour non lues
+const RELEASE_NOTES_URL='update-notes.json';
+const RELEASE_NOTES_SEEN_KEY='calorieSeenReleaseNotes_v1';
+
+function loadSeenReleaseNoteIds(){
+  try{return new Set(JSON.parse(localStorage.getItem(RELEASE_NOTES_SEEN_KEY)||'[]'));}
+  catch{return new Set();}
+}
+
+function saveSeenReleaseNoteIds(ids){
+  localStorage.setItem(RELEASE_NOTES_SEEN_KEY,JSON.stringify([...ids]));
+}
+
+async function fetchReleaseNotes(){
+  try{
+    const res=await fetch(`${RELEASE_NOTES_URL}?t=${Date.now()}`,{cache:'no-store'});
+    if(!res.ok)return [];
+    const data=await res.json();
+    return Array.isArray(data)?data:(data.releases||[]);
+  }catch{
+    return [];
+  }
+}
+
+async function unreadReleaseNotes(){
+  const seen=loadSeenReleaseNoteIds();
+  const notes=await fetchReleaseNotes();
+  return notes.filter(n=>n&&n.id&&!seen.has(n.id));
+}
+
+function markReleaseNotesSeen(notes){
+  const seen=loadSeenReleaseNoteIds();
+  notes.forEach(n=>{if(n.id)seen.add(n.id);});
+  saveSeenReleaseNoteIds(seen);
+}
+
+function releaseNotesDetailsHtml(notes){
+  if(!notes.length)return '';
+  return notes.map(note=>`
+    <div style="padding:10px 0;border-top:1px solid var(--border);">
+      <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;">${escapeHtml(note.title||'Mise à jour')}${note.date?' · '+escapeHtml(note.date):''}</div>
+      <ul style="margin:0;padding-left:18px;color:var(--text-muted);font-size:12px;line-height:1.45;">
+        ${(note.changes||[]).map(change=>`<li>${escapeHtml(change)}</li>`).join('')}
+      </ul>
+    </div>`).join('');
+}
+
+function showReleaseNotesPopup({registration=null,updateAvailable=false,notes=[]}={}){
+  if(document.getElementById('updatePopup'))return;
+  if(!updateAvailable&&!notes.length)return;
+
+  const popup=document.createElement('div');
+  popup.id='updatePopup';
+  const detailsOpen=!updateAvailable&&notes.length;
+  popup.innerHTML=`
+    <div style="
+      position:fixed;
+      left:20px;
+      right:20px;
+      bottom:20px;
+      z-index:99999;
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:16px;
+      padding:18px;
+      box-shadow:var(--shadow-lg);
+      max-width:560px;
+      margin:0 auto;
+    ">
+      <div style="display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap;">
+        <div style="flex:1 1 220px;min-width:0;">
+          <div style="font-weight:700;margin-bottom:4px;">${updateAvailable?'Nouvelle version disponible':'Nouveautés'}</div>
+          <div style="color:var(--text-muted);font-size:13px;">
+            ${updateAvailable?'Une mise à jour de l’application est disponible.':'Changements récents de l’application.'}
+          </div>
+        </div>
+        ${notes.length?`<button id="showReleaseNotesBtn" style="
+          border:1px solid var(--border);
+          border-radius:10px;
+          padding:10px 12px;
+          background:var(--surface2);
+          color:var(--text);
+          font-weight:600;
+          cursor:pointer;
+          white-space:nowrap;
+        ">${detailsOpen?'Masquer':'Détails'}</button>`:''}
+        ${updateAvailable?`<button id="updateAppBtn" style="
+          border:0;
+          border-radius:10px;
+          padding:10px 15px;
+          background:var(--accent);
+          color:white;
+          font-weight:600;
+          cursor:pointer;
+          white-space:nowrap;
+        ">Mettre à jour</button>`:`<button id="closeReleaseNotesBtn" style="
+          border:0;
+          border-radius:10px;
+          padding:10px 15px;
+          background:var(--accent);
+          color:white;
+          font-weight:600;
+          cursor:pointer;
+          white-space:nowrap;
+        ">OK</button>`}
+      </div>
+      <div id="releaseNotesDetails" style="display:${detailsOpen?'block':'none'};margin-top:12px;max-height:260px;overflow:auto;">
+        ${releaseNotesDetailsHtml(notes)}
+      </div>
+    </div>`;
+  document.body.appendChild(popup);
+  if(detailsOpen)markReleaseNotesSeen(notes);
+
+  const detailsBtn=document.getElementById('showReleaseNotesBtn');
+  if(detailsBtn)detailsBtn.addEventListener('click',()=>{
+    const details=document.getElementById('releaseNotesDetails');
+    const open=details.style.display==='none';
+    details.style.display=open?'block':'none';
+    detailsBtn.textContent=open?'Masquer':'Détails';
+    if(open)markReleaseNotesSeen(notes);
   });
+
+  const closeBtn=document.getElementById('closeReleaseNotesBtn');
+  if(closeBtn)closeBtn.addEventListener('click',()=>{
+    markReleaseNotesSeen(notes);
+    popup.remove();
+  });
+
+  const updateBtn=document.getElementById('updateAppBtn');
+  if(updateBtn)updateBtn.addEventListener('click',()=>{
+    if(registration&&registration.waiting){
+      registration.waiting.postMessage({type:'SKIP_WAITING'});
+    }
+  });
+}
+
+// ── PWA Service Worker + détection des mises à jour
+if('serviceWorker' in navigator){
+
+  window.addEventListener('load', async () => {
+
+    try {
+
+      const registration = await navigator.serviceWorker.register('sw.js');
+
+      const showUpdatePopup = async () => {
+        showReleaseNotesPopup({
+          registration,
+          updateAvailable:true,
+          notes:await unreadReleaseNotes()
+        });
+      };
+
+      // Une mise à jour était déjà en attente
+      if(registration.waiting){
+        showUpdatePopup();
+      }else if(navigator.serviceWorker.controller){
+        const notes=await unreadReleaseNotes();
+        if(notes.length)showReleaseNotesPopup({notes});
+      }
+
+      // Une nouvelle version du SW vient d'être trouvée
+      registration.addEventListener('updatefound', () => {
+
+        const newWorker = registration.installing;
+
+        if(!newWorker) return;
+
+        newWorker.addEventListener('statechange', () => {
+
+          if(
+            newWorker.state === 'installed' &&
+            navigator.serviceWorker.controller
+          ){
+            showUpdatePopup();
+          }
+
+        });
+
+      });
+
+      // Après "Mettre à jour", le nouveau SW prend le contrôle
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        window.location.reload();
+      });
+
+      // Vérifie également les mises à jour quand on revient
+      // sur l'application après l'avoir laissée ouverte.
+      document.addEventListener('visibilitychange', () => {
+
+        if(document.visibilityState === 'visible'){
+          registration.update();
+        }
+
+      });
+
+    } catch(err) {
+
+      console.log('SW non disponible:',err);
+
+    }
+
+  });
+
 }
 </script>
 </body>

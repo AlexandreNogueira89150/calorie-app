@@ -1,0 +1,107 @@
+{
+  "releases": [
+    {
+      "id": "2026-09-17-meal-actions-position",
+      "date": "2026-09-17",
+      "title": "Actions des aliments regroupées",
+      "changes": [
+        "Le menu Actions est placé en fin de ligne à côté du partage sur ordinateur, et en bas de chaque carte sur téléphone."
+      ]
+    },
+    {
+      "id": "2026-09-17-food-actions",
+      "date": "2026-09-17",
+      "title": "Scan et organisation des aliments",
+      "changes": [
+        "Les calories, macros et la portion sont modifiables avant de sauvegarder un produit scanné.",
+        "L'aliment et sa quantité restent sélectionnés après ajout à un repas.",
+        "Chaque aliment peut être réordonné, déplacé vers un autre repas ou enregistré comme défaut.",
+        "Les aliments par défaut peuvent être ajoutés individuellement ou tous ensemble."
+      ]
+    },
+    {
+      "id": "2026-09-15-scan-name-confirmation",
+      "date": "2026-09-15",
+      "title": "Nom modifiable après scan",
+      "changes": [
+        "Après scan d'un produit, le nom proposé par Open Food Facts peut être modifié avant sauvegarde.",
+        "Les valeurs nutritionnelles du produit scanné sont préremplies dans le calculateur.",
+        "Si le produit existe déjà, l'écran de modification de l'aliment existant est ouvert."
+      ]
+    },
+    {
+      "id": "2026-09-15-recipe-add-stays-open",
+      "date": "2026-09-15",
+      "title": "Ajout de recette sans changement d'onglet",
+      "changes": [
+        "L'ajout d'une portion de recette dans un repas ne redirige plus vers le calculateur.",
+        "La recette reste ouverte après l'ajout.",
+        "Une animation locale confirme que la recette a bien été ajoutée au repas."
+      ]
+    },
+    {
+      "id": "2026-09-15-food-serving-update",
+      "date": "2026-09-15",
+      "title": "Correction de la mise à jour des portions d'aliments",
+      "changes": [
+        "La mise à jour directe d'un aliment personnalisé prend maintenant en compte la nouvelle taille de portion saisie.",
+        "Après mise à jour, l'aliment sélectionné est rechargé avec ses nouvelles valeurs.",
+        "La création d'un aliment depuis le calculateur utilise la portion actuellement saisie."
+      ]
+    },
+    {
+      "id": "2026-09-15-portion-mode-consistency",
+      "date": "2026-09-15",
+      "title": "Correction du mode de quantité des aliments",
+      "changes": [
+        "Correction d'un cas où un aliment saisi en grammes pouvait être affiché comme une portion.",
+        "Les portions ne sont conservées que si le poids correspond réellement à taille de portion × nombre de portions.",
+        "Les anciennes lignes incohérentes repassent automatiquement en affichage grammes."
+      ]
+    },
+    {
+      "id": "2026-09-11-ideas-and-update-notes",
+      "date": "2026-09-11",
+      "title": "Boîte à idées et détails des mises à jour",
+      "changes": [
+        "Ajout d'une boîte à idées partagée dans l'onglet Famille.",
+        "Chaque membre peut proposer une amélioration et voter pour les idées existantes.",
+        "L'administrateur peut changer le statut d'une idée : À étudier, Prévu, Fait ou Refusé.",
+        "Le message de mise à jour peut maintenant afficher le détail des améliorations.",
+        "Les changements non lus restent affichés tant qu'ils n'ont pas été consultés."
+      ]
+    },
+    {
+      "id": "2026-09-11-mobile-date-navigation",
+      "date": "2026-09-11",
+      "title": "Navigation mobile des repas",
+      "changes": [
+        "Amélioration de la barre de date sur téléphone.",
+        "Les boutons précédent et suivant sont plus grands.",
+        "Les actions Aujourd'hui, Inverser, Dupliquer et Vider ne débordent plus de l'écran."
+      ]
+    },
+    {
+      "id": "2026-09-11-dated-additions-and-user-foods",
+      "date": "2026-09-11",
+      "title": "Ajouts de repas plus lisibles",
+      "changes": [
+        "Ajout d'un bouton pour revenir rapidement à aujourd'hui.",
+        "Ajout d'un avertissement quand un aliment ou une recette est ajouté sur un autre jour.",
+        "Les aliments créés ou scannés par l'utilisateur sont prioritaires dans les recherches.",
+        "Le bouton d'ajout confirme maintenant clairement le repas cible."
+      ]
+    },
+    {
+      "id": "2026-09-09-profile-balances",
+      "date": "2026-09-09",
+      "title": "Bilans nutritionnels dans le profil",
+      "changes": [
+        "Ajout des bilans semaine, mois et année dans l'onglet Profil.",
+        "Les jours sans repas renseigné sont exclus des moyennes.",
+        "Le déficit ou surplus calorique est calculé par rapport au maintien.",
+        "Les objectifs de macros sont affichés sous forme de fourchettes."
+      ]
+    }
+  ]
+}
