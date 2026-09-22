@@ -1922,6 +1922,7 @@ body{
   </div>
 
   <div id="recipeList"></div>
+  <button class="btn-ghost" id="manageRecipeCategories" style="margin:12px 0;">Gérer les catégories</button>
   <div id="recipesEmpty" style="display:none;">
     <div class="empty-state"><div class="empty-state-icon">📋</div><span id="recipesEmptyMsg">Aucune recette sauvegardée</span></div>
   </div>
@@ -2425,6 +2426,7 @@ const SAVE_DEBOUNCE_MS = 800;
 const FS_SHARED = {
   customPresets: { lsKey:'calorieCustomPresets_v2', field:'items', defaultVal:[] },
   recipes:       { lsKey:'calorieRecipes_v1',       field:'items', defaultVal:[] },
+  recipeCategories: { lsKey:'calorieRecipeCategories_v1', field:'data', defaultVal:{} },
   savedMeals:    { lsKey:'calorieSavedMeals_v1',    field:'items', defaultVal:[] },
   ideas:         { lsKey:'calorieIdeas_v1',         field:'items', defaultVal:[] },
 };
@@ -2530,6 +2532,8 @@ async function syncPullAll(userId=activeUserId(), options={}){
       if(snap.exists()){
         const data = snap.data();
         localStorage.setItem(meta.lsKey, JSON.stringify(data[meta.field] || meta.defaultVal));
+      }else if(key==='recipeCategories'){
+        localStorage.setItem(meta.lsKey,JSON.stringify(meta.defaultVal));
       }
     }
     // Personal
@@ -2601,7 +2605,7 @@ function syncPush(key, payload){
   _saveTimers[key] = setTimeout(async()=>{
     try{
       const { setDoc } = window.firebase;
-      await setDoc(ref, payload, { merge: true });
+      await setDoc(ref, payload, key==='recipeCategories'?{mergeFields:['data']}:{merge:true});
       console.log('[sync] Push:', key);
     }catch(e){
       console.error('[sync] Push error:', key, e);
@@ -3176,6 +3180,66 @@ let profileBalancePeriod='week';
 let builderIngredients=[],editingRecipeId=null,bSearchPending=null;
 let builderCategory='meal',recipeSearchQuery='',recipeCategoryFilter='all';
 const RECIPE_CAT_LABELS={breakfast:'🌅 Petit-déj',meal:'🍽 Repas',dessert:'🍰 Dessert',snack:'🍎 Collation'};
+function loadRecipeCategories(){
+  try{return JSON.parse(localStorage.getItem('calorieRecipeCategories_v1')||'{}');}catch{return {};}
+}
+function recipeCategoryLabels(){return {...RECIPE_CAT_LABELS,...loadRecipeCategories()};}
+function effectiveRecipeCategory(category){return Object.hasOwn(recipeCategoryLabels(),category)?category:'meal';}
+function saveRecipeCategories(categories){
+  localStorage.setItem('calorieRecipeCategories_v1',JSON.stringify(categories));
+  syncPushKey('recipeCategories');
+  renderRecipeList();
+}
+function renderRecipeCategories(){
+  const labels=recipeCategoryLabels();
+  builderCategory=effectiveRecipeCategory(builderCategory);
+  if(recipeCategoryFilter!=='all'&&!Object.hasOwn(labels,recipeCategoryFilter))recipeCategoryFilter='all';
+  [['bCategorySelect',false],['recipeCatFilter',true]].forEach(([id,filter])=>{
+    const container=document.getElementById(id);container.replaceChildren();
+    Object.entries(filter?{all:'Toutes',...labels}:labels).forEach(([key,label])=>{
+      const button=document.createElement('button');button.type='button';button.className='recipe-cat-btn';
+      button.textContent=label;button.style.cssText='white-space:normal;overflow-wrap:anywhere;max-width:100%;';
+      button.classList.toggle('active',key===(filter?recipeCategoryFilter:builderCategory));
+      button.onclick=()=>{if(filter){recipeCategoryFilter=key;renderRecipeList();}else{builderCategory=key;renderRecipeCategories();}};
+      container.appendChild(button);
+    });
+  });
+}
+function openRecipeCategoryManager(){
+  const dialog=document.createElement('dialog');
+  dialog.style.cssText='width:min(460px,calc(100% - 32px));max-height:85vh;overflow:auto;box-sizing:border-box;padding:20px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;';
+  const title=document.createElement('h3');title.textContent='Catégories de la famille';dialog.appendChild(title);
+  const list=document.createElement('div');dialog.appendChild(list);
+  const status=document.createElement('p');status.setAttribute('role','status');
+  const validName=(name,id)=>{
+    if(!name||name.length>40){status.textContent='Saisis un nom de 1 à 40 caractères.';return false;}
+    if(Object.entries(recipeCategoryLabels()).some(([key,label])=>key!==id&&normalizeSearchText(label)===normalizeSearchText(name))){status.textContent='Cette catégorie existe déjà.';return false;}
+    status.textContent='';return true;
+  };
+  const refresh=()=>{
+    list.replaceChildren();
+    Object.entries(loadRecipeCategories()).forEach(([id,label])=>{
+      const row=document.createElement('form');row.style.cssText='display:flex;flex-wrap:wrap;gap:8px;margin:12px 0;';
+      const input=document.createElement('input');input.className='itxt';input.value=label;input.maxLength=40;input.required=true;input.setAttribute('aria-label','Nom de la catégorie');input.style.cssText='flex:1;min-width:120px;';
+      const save=document.createElement('button');save.className='btn-secondary';save.textContent='Renommer';save.type='submit';
+      row.onsubmit=event=>{event.preventDefault();const name=input.value.trim();if(!validName(name,id))return;const categories=loadRecipeCategories();categories[id]=name;saveRecipeCategories(categories);status.textContent='Catégorie renommée.';refresh();};
+      const remove=document.createElement('button');remove.className='btn-ghost';remove.type='button';remove.textContent='×';remove.title='Supprimer la catégorie';remove.setAttribute('aria-label','Supprimer '+label);
+      remove.onclick=()=>{
+        if(!confirm('Supprimer « '+label+' » ? Les recettes concernées seront classées dans Repas.'))return;
+        const categories=loadRecipeCategories();delete categories[id];saveRecipeCategories(categories);refresh();
+      };
+      row.append(input,save,remove);list.appendChild(row);
+    });
+  };
+  const form=document.createElement('form');form.style.cssText='display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;';
+  const name=document.createElement('input');name.className='itxt';name.placeholder='Nouvelle catégorie';name.setAttribute('aria-label','Nouvelle catégorie');name.maxLength=40;name.required=true;name.style.cssText='flex:1;min-width:120px;';
+  const add=document.createElement('button');add.type='submit';add.className='btn-primary';add.textContent='Créer';
+  form.onsubmit=event=>{event.preventDefault();const label=name.value.trim();if(!validName(label))return;const categories=loadRecipeCategories();categories['cat_'+crypto.randomUUID()]=label;saveRecipeCategories(categories);name.value='';status.textContent='Catégorie créée.';refresh();};
+  form.append(name,add);dialog.append(form,status);
+  const close=document.createElement('button');close.className='btn-secondary';close.textContent='Fermer';close.onclick=()=>dialog.close();dialog.appendChild(close);
+  dialog.addEventListener('close',()=>dialog.remove());refresh();document.body.appendChild(dialog);dialog.showModal();
+}
+document.getElementById('manageRecipeCategories').addEventListener('click',openRecipeCategoryManager);
 
 // ═══════════════════════════════════════════
 // HELPERS
@@ -4893,7 +4957,7 @@ document.getElementById('resetBtn').addEventListener('click',()=>{
   clearResults();renderPresets();
 });
 document.getElementById('exportBtn').addEventListener('click',()=>{
-  const data={customPresets:loadCustom(),recipes:loadRecipes(),mealsHistory:loadHistory(),exportedAt:new Date().toISOString()};
+  const data={customPresets:loadCustom(),recipes:loadRecipes(),recipeCategories:loadRecipeCategories(),mealsHistory:loadHistory(),exportedAt:new Date().toISOString()};
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
   a.download='calories-export.json';a.click();URL.revokeObjectURL(a.href);
 });
@@ -4906,6 +4970,13 @@ document.getElementById('importFile').addEventListener('change',e=>{
       const imported=data.customPresets||(Array.isArray(data)?data:[]);
       const ex=loadCustom();const exIds=new Set(ex.map(x=>x.id));
       imported.forEach(item=>{if(!exIds.has(item.id)){ex.push(item);addedP++;}});saveCustom(ex);renderPresets();
+      if(data.recipeCategories&&typeof data.recipeCategories==='object'&&!Array.isArray(data.recipeCategories)){
+        const categories=loadRecipeCategories();
+        for(const [id,label] of Object.entries(data.recipeCategories)){
+          if(id.startsWith('cat_')&&typeof label==='string'&&label.trim()&&label.length<=40&&!Object.hasOwn(categories,id))categories[id]=label.trim();
+        }
+        saveRecipeCategories(categories);
+      }
       if(Array.isArray(data.recipes)){const exR=loadRecipes();const exRIds=new Set(exR.map(x=>x.id));data.recipes.forEach(r=>{if(!exRIds.has(r.id)){exR.push(r);addedR++;}});saveRecipes(exR);renderRecipeList();}
       alert(`Importé : ${addedP} aliment(s), ${addedR} recette(s).`);
     }catch{alert('Fichier invalide.');}
@@ -5170,6 +5241,7 @@ function renderBuilderIngredients(){
 }
 
 function openBuilder(recipeId){
+  renderRecipeCategories();
   document.getElementById('recipeBuilder').classList.add('open');
   clearIngSelection();renderBuilderIngredients();
   // reset qty mode to grams
@@ -5211,7 +5283,7 @@ document.getElementById('bSaveBtn').addEventListener('click',()=>{
     const existing=loadRecipes().find(r=>r.id===id);
     const recipes=loadRecipes().filter(r=>r.id!==id);
         const newRecipe={id,name,emoji,
-      category:builderCategory,
+      category:effectiveRecipeCategory(builderCategory),
       ingredients:JSON.parse(JSON.stringify(builderIngredients)),
       servings:existing?existing.servings:1,
       cookedWeight:existing?existing.cookedWeight:null,
@@ -5274,6 +5346,7 @@ function calcTotals(ings){
 }
 
 function renderRecipeList(){
+  renderRecipeCategories();
   const list=document.getElementById('recipeList'),empty=document.getElementById('recipesEmpty'),allRecipes=loadRecipes();
   list.innerHTML='';
   if(!allRecipes.length){
@@ -5282,7 +5355,7 @@ function renderRecipeList(){
   }
   const q=normalizeSearchText(recipeSearchQuery);
   const recipes=allRecipes.filter(r=>{
-    if(recipeCategoryFilter!=='all'&&(r.category||'meal')!==recipeCategoryFilter)return false;
+    if(recipeCategoryFilter!=='all'&&effectiveRecipeCategory(r.category)!==recipeCategoryFilter)return false;
     if(q&&!normalizeSearchText(r.name).includes(q))return false;
     return true;
   });
@@ -5297,7 +5370,7 @@ function renderRecipeList(){
     card.innerHTML=`
       <div class="recipe-header">
         <div class="recipe-title-wrap"><span class="recipe-emoji">${recipe.emoji}</span>
-                    <div><div class="recipe-name">${recipe.name}${typeof memberBadge==="function"?memberBadge(recipe.addedBy):""}</div><div class="recipe-meta">${RECIPE_CAT_LABELS[recipe.category||'meal']} · ${recipe.ingredients.length} ing · ${fmt(tR,0)}g</div><div class="recipe-ing-preview">${recipe.ingredients.map(ing=>(ing.emoji||'')+' '+ing.name.replace(/ \(.*\)$/,'')).join(' · ')}</div></div>
+                    <div><div class="recipe-name">${recipe.name}${typeof memberBadge==="function"?memberBadge(recipe.addedBy):""}</div><div class="recipe-meta">${escapeHtml(recipeCategoryLabels()[effectiveRecipeCategory(recipe.category)])} · ${recipe.ingredients.length} ing · ${fmt(tR,0)}g</div><div class="recipe-ing-preview">${recipe.ingredients.map(ing=>(ing.emoji||'')+' '+ing.name.replace(/ \(.*\)$/,'')).join(' · ')}</div></div>
         </div>
         <div class="recipe-badges"><span class="badge badge-kcal">${fmt(tK,0)} kcal</span>
           <div class="badge-actions">

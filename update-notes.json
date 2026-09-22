@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "id": "2026-09-22-recipe-categories",
+      "date": "2026-09-22",
+      "title": "Catégories de recettes familiales",
+      "changes": [
+        "Créez, renommez et supprimez vos catégories personnalisées depuis Recettes.",
+        "Les catégories sont partagées avec la famille et disponibles dans les recettes et les filtres."
+      ]
+    },
+    {
       "id": "2026-09-22-scanner",
       "date": "2026-09-22",
       "title": "Scan des produits amélioré",
