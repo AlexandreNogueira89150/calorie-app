@@ -1,6 +1,25 @@
 {
   "releases": [
     {
+      "id": "2026-09-24-recipe-live-nutrition",
+      "date": "2026-09-24",
+      "title": "Macros pendant la création des recettes",
+      "changes": [
+        "Le total des calories, protéines, glucides et lipides apparaît pendant la saisie de la recette.",
+        "Les totaux se mettent à jour à chaque ajout, suppression ou modification de quantité."
+      ]
+    },
+    {
+      "id": "2026-09-24-scanned-food-save",
+      "date": "2026-09-24",
+      "title": "Sauvegarde et recherche des aliments scannés",
+      "changes": [
+        "Les valeurs nutritionnelles précises et les portions décimales ne bloquent plus la sauvegarde après un scan.",
+        "Les aliments personnels sont prioritaires avant la limitation des résultats de recherche.",
+        "Le message de calories manquantes reste visible après un scan."
+      ]
+    },
+    {
       "id": "2026-09-22-weight-tracking",
       "date": "2026-09-22",
       "title": "Pesées et objectifs évolutifs",

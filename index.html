@@ -1802,6 +1802,7 @@ body{
       </div>
     </div>
 
+    <div id="builderNutrition" role="status" aria-live="polite" aria-atomic="true" style="margin:12px 0 20px;"></div>
     <div class="card-title">Ajouter un ingrédient</div>
     <div class="add-ing-tabs">
       <button class="add-ing-tab active" data-itab="preset">Mes aliments</button>
@@ -2371,23 +2372,23 @@ body{
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
         <div class="field">
           <label>Kcal / 100g *</label>
-          <div class="iw"><input type="number" id="editKcal" min="0" step="0.1" inputmode="decimal"><span class="iu">kcal</span></div>
+          <div class="iw"><input type="number" id="editKcal" min="0" step="any" inputmode="decimal"><span class="iu">kcal</span></div>
         </div>
         <div class="field">
           <label>Portion (g)</label>
-          <div class="iw"><input type="number" id="editServing" min="0" step="1" inputmode="decimal"><span class="iu">g</span></div>
+          <div class="iw"><input type="number" id="editServing" min="0" step="any" inputmode="decimal"><span class="iu">g</span></div>
         </div>
         <div class="field">
           <label>Protéines / 100g</label>
-          <div class="iw"><input type="number" id="editP" min="0" step="0.1" inputmode="decimal"><span class="iu">g</span></div>
+          <div class="iw"><input type="number" id="editP" min="0" step="any" inputmode="decimal"><span class="iu">g</span></div>
         </div>
         <div class="field">
           <label>Glucides / 100g</label>
-          <div class="iw"><input type="number" id="editC" min="0" step="0.1" inputmode="decimal"><span class="iu">g</span></div>
+          <div class="iw"><input type="number" id="editC" min="0" step="any" inputmode="decimal"><span class="iu">g</span></div>
         </div>
         <div class="field" style="grid-column:1 / span 2;">
           <label>Lipides / 100g</label>
-          <div class="iw"><input type="number" id="editF" min="0" step="0.1" inputmode="decimal"><span class="iu">g</span></div>
+          <div class="iw"><input type="number" id="editF" min="0" step="any" inputmode="decimal"><span class="iu">g</span></div>
         </div>
       </div>
     </div>
@@ -4495,8 +4496,7 @@ async function handleBarcodeDetected(code){
       showScannerError('Produit ' + code + ' non trouvé dans Open Food Facts. Crée-le manuellement avec "+ Créer".');
       return;
     }
-    prepareScannedProductForSave(data.product);
-    closeScannerModal();
+    if(prepareScannedProductForSave(data.product))closeScannerModal();
   } catch(e){
     if(lookup!==_scannerLookup)return;
     showScannerError('Erreur réseau : ' + e.message);
@@ -4510,7 +4510,7 @@ function prepareScannedProductForSave(p){
   const kcal = n['energy-kcal_100g'];
   if(kcal == null){
     showScannerError('Calories non disponibles pour ce produit. Saisis-les manuellement.');
-    return;
+    return false;
   }
   const fullName = brand ? `${name} — ${brand}` : name;
   const servingG = parseServingGrams(p.serving_size || '') ||
@@ -4525,7 +4525,7 @@ function prepareScannedProductForSave(p){
       document.getElementById('presetSelectedName').textContent = (existing.emoji||'📦') + ' ' + existing.name;
       presetSelectedDisplay.style.display = 'flex';
     }
-    return;
+    return true;
   }
   applyCalcResult({
     name,
@@ -4552,6 +4552,7 @@ function prepareScannedProductForSave(p){
   document.getElementById('editServing').value=Number.isFinite(servingG)?servingG:'';
   document.getElementById('modalAdd').classList.add('open');
   setTimeout(()=>document.getElementById('newFoodName').select(),80);
+  return true;
 }
 
 document.getElementById('scanBarcodeBtn').addEventListener('click', openScannerModal);
@@ -5235,7 +5236,33 @@ document.getElementById('bAddIngManual').addEventListener('click',()=>{
   renderBuilderIngredients();
 });
 
+function builderNutritionTotals(ingredients){
+  const result={};
+  for(const key of ['kcal','p','c','f']){
+    const complete=ingredients.every(ing=>ing[key]!=null&&Number.isFinite(Number(ing[key])));
+    result[key]=complete?ingredients.reduce((sum,ing)=>sum+Number(ing[key])*ing.rawG/100,0):null;
+  }
+  return result;
+}
+function renderBuilderNutrition(){
+  const totals=builderNutritionTotals(builderIngredients);
+  const root=document.getElementById('builderNutrition');
+  root.innerHTML='<div class="card-title">Total de la recette</div>';
+  const grid=document.createElement('div');grid.style.cssText='display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;';
+  [['kcal','Calories','kcal','kv'],['p','Protéines','g','pv'],['c','Glucides','g','cv'],['f','Lipides','g','fv']].forEach(([key,label,unit,style])=>{
+    const cell=document.createElement('div');cell.className=style;
+    cell.style.cssText='padding:8px 0;min-width:0;overflow-wrap:anywhere;';
+    cell.textContent=label+' : '+(totals[key]===null?'Non disponible':fmt(totals[key],key==='kcal'?0:1)+' '+unit);
+    grid.appendChild(cell);
+  });
+  root.appendChild(grid);
+  if(Object.values(totals).some(value=>value===null)){
+    const note=document.createElement('div');note.style.cssText='font-size:12px;color:var(--text-muted);';
+    note.textContent='Valeurs nutritionnelles manquantes pour certains ingrédients.';root.appendChild(note);
+  }
+}
 function renderBuilderIngredients(){
+  renderBuilderNutrition();
   const container=document.getElementById('builderIngredientsList');
   // Clear all children except bIngEmpty (which we detach first)
   let empty=document.getElementById('bIngEmpty');
@@ -5259,6 +5286,14 @@ function renderBuilderIngredients(){
     const qtyUnit=document.createElement('span');qtyUnit.textContent='g';qtyUnit.style.cssText='position:absolute;right:8px;font-size:10px;color:var(--text-dim);pointer-events:none;';
     qtyWrap.appendChild(qtyIn);qtyWrap.appendChild(qtyUnit);
     const kcalEl=document.createElement('span');kcalEl.style.cssText='color:var(--accent);font-size:12px;font-weight:600;text-align:right;white-space:nowrap;';kcalEl.textContent=fmt(kT,0)+' kcal';
+    qtyIn.addEventListener('input',()=>{
+      const value=Number(qtyIn.value);
+      if(qtyIn.value!==''&&Number.isFinite(value)&&value>0){
+        builderIngredients[i].rawG=value;
+        kcalEl.textContent=fmt(value*ing.kcal/100,0)+' kcal';
+        renderBuilderNutrition();
+      }
+    });
     const delBtn=document.createElement('button');delBtn.className='bi-del';delBtn.textContent='×';
     delBtn.addEventListener('click',()=>{builderIngredients.splice(i,1);renderBuilderIngredients();});
     row.appendChild(nameEl);row.appendChild(qtyWrap);row.appendChild(kcalEl);row.appendChild(delBtn);
@@ -5705,7 +5740,7 @@ function buildPresetDropdown(filter=''){
       scored.push({p,s:5});
     }
   }
-  scored.sort((a,b)=>a.s-b.s);
+  scored.sort((a,b)=>Number(customIds.has(b.p.id))-Number(customIds.has(a.p.id))||a.s-b.s);
   const truncated=scored.length>MAX;
   const shown=scored.slice(0,MAX);
   const groups={};
