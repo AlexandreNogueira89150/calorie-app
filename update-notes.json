@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "id": "2026-10-07-meal-quantity-mode",
+      "date": "2026-10-07",
+      "title": "Quantités en grammes ou portions",
+      "changes": [
+        "Dans les repas, choisissez Grammes ou Portions pour chaque aliment pesable.",
+        "Le changement d'unité conserve la quantité et les macros. Le poids d'une portion reste modifiable."
+      ]
+    },
+    {
       "id": "2026-09-24-recipe-live-nutrition",
       "date": "2026-09-24",
       "title": "Macros pendant la création des recettes",
