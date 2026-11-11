@@ -1215,7 +1215,7 @@ body{
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
   import {
     getFirestore, doc, setDoc, getDoc, deleteDoc, collection, getDocs,
-    query, where, enableIndexedDbPersistence, writeBatch
+    query, where, enableIndexedDbPersistence, writeBatch, runTransaction
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
   const firebaseConfig = {
@@ -1240,7 +1240,7 @@ body{
     GoogleAuthProvider, signInWithPopup, signInAnonymously,
     createUserWithEmailAndPassword, signInWithEmailAndPassword,
     signOut, onAuthStateChanged,
-    doc, setDoc, getDoc, deleteDoc, collection, getDocs, query, where, writeBatch
+    doc, setDoc, getDoc, deleteDoc, collection, getDocs, query, where, writeBatch, runTransaction
   };
 
   // Auth state listener
@@ -2426,6 +2426,7 @@ body{
   </div>
 </div>
 
+<script src="./sync-merge.js"></script>
 <script>
 'use strict';
 
@@ -2436,6 +2437,85 @@ let _syncReady = false;          // true after initial Firestore load
 let _syncEnabled = false;        // true when user is logged in
 let _saveTimers = {};            // debounce timers per key
 const SAVE_DEBOUNCE_MS = 800;
+let _syncFlight=null;
+let _syncError='';
+function syncJournal(){return JSON.parse(localStorage.getItem('calorieSyncPending_v1')||'{}');}
+function syncBase(path){return JSON.parse(localStorage.getItem('calorieSyncBase:'+path)||'{}');}
+function syncSetBase(path,value){localStorage.setItem('calorieSyncBase:'+path,JSON.stringify(value));}
+function syncNotice(){
+  let el=document.getElementById('syncNotice');
+  if(!el){el=document.createElement('div');el.id='syncNotice';el.setAttribute('role','status');el.style.cssText='padding:10px 16px;background:var(--surface2);color:var(--text);font-size:12px;';document.body.prepend(el);}
+  const count=Object.values(syncJournal()).filter(x=>x.actor===currentUser?.uid).length;
+  el.textContent=_syncError?`Synchronisation impossible : ${_syncError}. Modifications conservées sur cet appareil.`:count?`${count} sauvegarde(s) en attente de synchronisation.`:'Données synchronisées';
+  if(count||_syncError){const retry=document.createElement('button');retry.className='btn-ghost';retry.textContent='Réessayer';retry.onclick=()=>flushSync();el.append(' ',retry);}
+  const recovery=currentUser&&localStorage.getItem('calorieSyncRecovery:'+currentUser.uid+':'+currentFamilyId);
+  if(recovery){
+    const button=document.createElement('button');button.className='btn-ghost';button.textContent='Copie de récupération';
+    button.onclick=()=>{const url=URL.createObjectURL(new Blob([recovery],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='calories-recuperation.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
+    el.append(' ',button);
+  }
+}
+function preserveSyncRecovery(){
+  const key='calorieSyncRecovery:'+currentUser.uid+':'+currentFamilyId;
+  if(localStorage.getItem(key))return;
+  const data={};
+  for(const meta of Object.values({...FS_SHARED,...FS_PERSONAL}))data[meta.lsKey]=localStorage.getItem(meta.lsKey);
+  data.calorieGoal=localStorage.getItem('calorieGoal');
+  localStorage.setItem(key,JSON.stringify({date:new Date().toISOString(),familyId:currentFamilyId,userId:activeUserId(),data}));
+}
+function syncCurrentPath(key){return (FS_SHARED[key]?sharedDocRef(key):personalDocRef(key))?.path;}
+function syncLocalPayload(key){
+  if(key==='settings')return {goal:Number(localStorage.getItem('calorieGoal'))||0};
+  const meta=FS_SHARED[key]||FS_PERSONAL[key];
+  return {[meta.field]:JSON.parse(localStorage.getItem(meta.lsKey)||JSON.stringify(meta.defaultVal))};
+}
+function syncStorePayload(key,payload){
+  if(key==='settings'){if(payload.goal!=null)localStorage.setItem('calorieGoal',String(payload.goal));return;}
+  const meta=FS_SHARED[key]||FS_PERSONAL[key];
+  localStorage.setItem(meta.lsKey,JSON.stringify(payload[meta.field]??meta.defaultVal));
+}
+async function flushSync(){
+  if(_syncFlight)return _syncFlight;
+  if(!currentUser||!window.firebase)return;
+  _syncFlight=(async()=>{
+    const {doc,db,runTransaction}=window.firebase;
+    for(const [path,entry] of Object.entries(syncJournal())){
+      if(entry.actor!==currentUser.uid)continue;
+      try{
+        const merged=await runTransaction(db,async tx=>{
+          const ref=doc(db,path),snap=await tx.get(ref);
+          const result=CalorieSyncMerge.merge(entry.base,entry.payload,snap.exists()?snap.data():{});
+          tx.set(ref,result);return result;
+        });
+        const journal=syncJournal(),latest=journal[path];
+        syncSetBase(path,merged);
+        if(latest?.revision===entry.revision)delete journal[path];
+        else if(latest){latest.payload=CalorieSyncMerge.merge(entry.payload,latest.payload,merged);latest.base=merged;}
+        localStorage.setItem('calorieSyncPending_v1',JSON.stringify(journal));
+        if(entry.actor===currentUser?.uid&&syncCurrentPath(entry.key)===path)syncStorePayload(entry.key,latest?.revision===entry.revision?merged:latest?.payload||merged);
+        _syncError='';
+      }catch(error){_syncError=error.code||error.message||'connexion indisponible';console.error('[sync]',error);break;}
+    }
+  })();
+  try{await _syncFlight;}finally{_syncFlight=null;syncNotice();}
+}
+window.addEventListener('online',()=>flushSync());
+setInterval(()=>{if(currentUser&&Object.keys(syncJournal()).length)flushSync();},30000);
+let _syncRefreshing=false;
+window.addEventListener('focus',async()=>{
+  if(!_syncReady||!_syncEnabled||!currentUser||_syncRefreshing)return;
+  _syncRefreshing=true;
+  const family=currentFamilyId,user=activeUserId();
+  try{
+    await syncPullAll(user,{throwErrors:true});
+    if(family!==currentFamilyId||user!==activeUserId())return;
+    const expanded=[...document.querySelectorAll('.recipe-card.expanded')].map(x=>x.dataset.rid);
+    renderPresets();renderRecipeList();
+    document.querySelectorAll('.recipe-card').forEach(card=>{if(expanded.includes(card.dataset.rid))card.classList.add('expanded');});
+    renderMealSection();updateGoalBanner();syncNotice();
+  }catch(error){console.error('[sync] refresh',error);}
+  finally{_syncRefreshing=false;}
+});
 
 // Data classification: shared (family) vs personal (per-user)
 const FS_SHARED = {
@@ -2537,40 +2617,48 @@ function personalDocRef(key,userId=activeUserId()){
 
 // ── Pull all data
 async function syncPullAll(userId=activeUserId(), options={}){
-  if(!currentFamilyId || !window.firebase){return;}
+  if(!currentFamilyId || !currentUser || !window.firebase){return;}
+  preserveSyncRecovery();
+  await flushSync();
   const { getDoc } = window.firebase;
+  const family=currentFamilyId,actor=currentUser?.uid,staged=[];
   console.log('[sync] Pull from Firestore…');
   try{
     // Shared
     for(const [key, meta] of Object.entries(FS_SHARED)){
-      const snap = await getDoc(sharedDocRef(key));
-      if(snap.exists()){
-        const data = snap.data();
-        localStorage.setItem(meta.lsKey, JSON.stringify(data[meta.field] || meta.defaultVal));
-      }else if(key==='recipeCategories'){
-        localStorage.setItem(meta.lsKey,JSON.stringify(meta.defaultVal));
-      }
+      const ref=sharedDocRef(key),before=localStorage.getItem(meta.lsKey);
+      const snap = await getDoc(ref);
+      if(syncJournal()[ref.path]||before!==localStorage.getItem(meta.lsKey))continue;
+      staged.push({key,ref,before,lsKey:meta.lsKey,payload:snap.exists()?snap.data():{},write:snap.exists()||key==='recipeCategories'});
     }
     // Personal
     for(const [key, meta] of Object.entries(FS_PERSONAL)){
-      const snap = await getDoc(personalDocRef(key,userId));
-      if(snap.exists()){
-        const data = snap.data();
-        localStorage.setItem(meta.lsKey, JSON.stringify(data[meta.field] || meta.defaultVal));
-      }else{
-        localStorage.setItem(meta.lsKey, JSON.stringify(meta.defaultVal));
+      const ref=personalDocRef(key,userId),before=localStorage.getItem(meta.lsKey);
+      const snap = await getDoc(ref);
+      if(syncJournal()[ref.path]||before!==localStorage.getItem(meta.lsKey)){
+        if(userId!==activeUserId())throw new Error('Sauvegarde en attente : réessaie avant de changer de compte.');
+        continue;
       }
+      staged.push({key,ref,before,lsKey:meta.lsKey,payload:snap.exists()?snap.data():{},write:true});
     }
     // Settings (goal) — personal
-    const sSnap = await getDoc(personalDocRef('settings',userId));
-    if(sSnap.exists() && sSnap.data().goal != null){
-      localStorage.setItem('calorieGoal', String(sSnap.data().goal));
-    }else{
-      localStorage.removeItem('calorieGoal');
+    const settingsRef=personalDocRef('settings',userId),beforeGoal=localStorage.getItem('calorieGoal');
+    const sSnap = await getDoc(settingsRef);
+    staged.push({key:'settings',ref:settingsRef,before:beforeGoal,lsKey:'calorieGoal',payload:sSnap.exists()?sSnap.data():{},write:true});
+    if(family!==currentFamilyId||actor!==currentUser?.uid)return;
+    if(userId!==activeUserId()&&Object.values(syncJournal()).some(x=>x.actor===actor))throw new Error('Sauvegarde en attente, changement de compte annulé.');
+    for(const entry of staged){
+      if(syncJournal()[entry.ref.path]||entry.before!==localStorage.getItem(entry.lsKey))continue;
+      syncSetBase(entry.ref.path,entry.payload);
+      if(entry.write){
+        if(entry.key==='settings'&&entry.payload.goal==null)localStorage.removeItem('calorieGoal');
+        else syncStorePayload(entry.key,entry.payload);
+      }
     }
     console.log('[sync] Pull terminé');
   }catch(e){
     console.error('[sync] Pull error:', e);
+    _syncError=e.code||e.message;syncNotice();
     if(options.throwErrors) throw e;
   }
 }
@@ -2605,30 +2693,27 @@ function refreshPersonalUIFromStorage(){
 async function switchPersonalContext(userId){
   if(!currentUser || !currentFamilyId || !userId || userId===activeUserId()) return;
   const wasSyncEnabled = _syncEnabled;
+  await flushSync();
+  if(Object.values(syncJournal()).some(x=>x.actor===currentUser.uid))throw new Error('Synchronisation en attente. Réessaie avant de changer de compte.');
   _syncEnabled = false;
-  await syncPullAll(userId,{throwErrors:true});
-  activePersonalUserId = userId;
-  _syncEnabled = wasSyncEnabled;
+  try{await syncPullAll(userId,{throwErrors:true});activePersonalUserId = userId;}
+  finally{_syncEnabled = wasSyncEnabled;}
   refreshPersonalUIFromStorage();
 }
 
 // ── Push (debounced)
 function syncPush(key, payload){
-  if(!_syncEnabled || !currentFamilyId) return;
-  if(_saveTimers[key]) clearTimeout(_saveTimers[key]);
+  if(!currentFamilyId||!currentUser){_syncError='compte non connecté';syncNotice();return;}
   let ref;
   if(FS_SHARED[key]) ref = sharedDocRef(key);
   else ref = personalDocRef(key); // personal data + settings
   if(!ref) return;
-  _saveTimers[key] = setTimeout(async()=>{
-    try{
-      const { setDoc } = window.firebase;
-      await setDoc(ref, payload, key==='recipeCategories'?{mergeFields:['data']}:{merge:true});
-      console.log('[sync] Push:', key);
-    }catch(e){
-      console.error('[sync] Push error:', key, e);
-    }
-  }, SAVE_DEBOUNCE_MS);
+  const journal=syncJournal();
+  journal[ref.path]={key,actor:currentUser.uid,base:journal[ref.path]?.base||syncBase(ref.path),payload,revision:crypto.randomUUID()};
+  localStorage.setItem('calorieSyncPending_v1',JSON.stringify(journal));
+  syncNotice();
+  clearTimeout(_saveTimers[ref.path]);
+  _saveTimers[ref.path]=setTimeout(()=>flushSync(),SAVE_DEBOUNCE_MS);
 }
 
 // ── Push by LS key. Tags shared items with addedBy on push.
@@ -2645,7 +2730,7 @@ function syncPushKey(fsKey){
       localStorage.setItem(meta.lsKey, JSON.stringify(val));
     }
     syncPush(fsKey, { [meta.field]: val });
-  }catch(e){console.error('syncPushKey',fsKey,e);}
+  }catch(e){_syncError=e.code||e.message;console.error('syncPushKey',fsKey,e);syncNotice();}
 }
 
 // ── First-time: migrate localStorage to Firestore
@@ -2685,10 +2770,11 @@ async function onLoginPullAndRefresh(){
   }
   if(!currentFamilyId){console.warn('[sync] Pas de famille');return;}
   try{
-    await syncPullAll();
+    await syncPullAll(activeUserId(),{throwErrors:true});
     await loadMembersCache();
   }catch(e){
     console.error('[sync] Pull/members error:', e);
+    return;
   }
   // Migrate if shared customPresets doesn't exist yet
   let needMigration = false;
@@ -3670,8 +3756,9 @@ async function pushMealsHistoryNow(){
   if(!_syncEnabled || !currentFamilyId || !window.firebase) return;
   const raw=localStorage.getItem(LS_MEALS);
   const data=raw?JSON.parse(raw):{};
-  const { setDoc } = window.firebase;
-  await setDoc(personalDocRef('mealsHistory'), { data }, { merge:true });
+  syncPush('mealsHistory',{data});
+  await flushSync();
+  if(syncJournal()[personalDocRef('mealsHistory').path])throw new Error('Repas conservé localement, synchronisation en attente.');
 }
 
 async function acceptShareRequest(req){

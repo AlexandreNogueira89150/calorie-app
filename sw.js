@@ -1,8 +1,9 @@
-const CACHE = 'calories-v16';
+const CACHE = 'calories-v17';
 
 const ASSETS = [
   './',
   './index.html',
+  './sync-merge.js',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',

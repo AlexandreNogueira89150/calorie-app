@@ -1,6 +1,16 @@
 {
   "releases": [
     {
+      "id": "2026-11-11-sync-preservation",
+      "date": "2026-11-11",
+      "title": "Protection des recettes et repas synchronisés",
+      "changes": [
+        "Les envois en attente sont conservés sur cet appareil et réessayés après une erreur réseau.",
+        "Les modifications de recettes et de repas sont fusionnées avec les données du serveur.",
+        "Les erreurs de synchronisation sont visibles et un rafraîchissement préserve les modifications non envoyées."
+      ]
+    },
+    {
       "id": "2026-10-07-meal-quantity-mode",
       "date": "2026-10-07",
       "title": "Quantités en grammes ou portions",
